@@ -65,6 +65,31 @@ def test_create_key_validates(client, auth_headers, key):
     assert dup.status_code == 409
 
 
+def test_a_door_code_needs_the_codes_plugin(client, auth_headers, db):
+    """Keys works without Codes: code_id is checked against the codes table
+    only when that plugin is loaded, and refused otherwise."""
+    if "codes" not in db.metadata.tables:
+        resp = client.post("/api/v1/keys/", json={"label": "Gate", "code_id": 1})
+        assert resp.status_code == 404
+        return
+    from hubra_codes.models import Code
+
+    code = Code(name="Gate", code="x")
+    db.session.add(code)
+    db.session.commit()
+    resp = client.post("/api/v1/keys/", json={"label": "Gate", "code_id": code.id})
+    assert resp.status_code == 201
+    assert resp.get_json()["codeId"] == code.id
+    missing = client.post("/api/v1/keys/", json={"label": "G2", "code_id": code.id + 9})
+    assert missing.status_code == 404
+
+
+def test_keys_has_no_foreign_key_to_codes():
+    from hubra_keys.models import Key
+
+    assert not Key.__table__.c.code_id.foreign_keys
+
+
 def test_issue_and_return_key_logs_history(client, auth_headers, key, other_member):
     resp = client.post(
         f"/api/v1/keys/{key.id}/issue", json={"member_id": other_member.id}

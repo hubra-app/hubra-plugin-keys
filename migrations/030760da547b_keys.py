@@ -39,7 +39,6 @@ def upgrade():
         sa.Column("notes", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(["code_id"], ["codes.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["holder_id"], ["members.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("number"),
