@@ -82,7 +82,9 @@ def test_a_door_code_needs_the_codes_plugin(client, auth_headers, db):
     codes = db.metadata.tables["codes"]
     code_id = db.session.execute(
         codes.insert()
-        .values(name="Gate", code="x", is_active=True, created_at=_now(), updated_at=_now())
+        .values(
+            name="Gate", code="x", is_active=True, created_at=_now(), updated_at=_now()
+        )
         .returning(codes.c.id)
     ).scalar_one()
     db.session.commit()
