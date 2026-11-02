@@ -65,6 +65,12 @@ def test_create_key_validates(client, auth_headers, key):
     assert dup.status_code == 409
 
 
+def _now():
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc)
+
+
 def test_a_door_code_needs_the_codes_plugin(client, auth_headers, db):
     """Keys works without Codes: code_id is checked against the codes table
     only when that plugin is loaded, and refused otherwise."""
@@ -72,15 +78,18 @@ def test_a_door_code_needs_the_codes_plugin(client, auth_headers, db):
         resp = client.post("/api/v1/keys/", json={"label": "Gate", "code_id": 1})
         assert resp.status_code == 404
         return
-    from hubra_codes.models import Code
-
-    code = Code(name="Gate", code="x")
-    db.session.add(code)
+    # The codes table, from the plugin or (older Hubra) built in.
+    codes = db.metadata.tables["codes"]
+    code_id = db.session.execute(
+        codes.insert()
+        .values(name="Gate", code="x", is_active=True, created_at=_now(), updated_at=_now())
+        .returning(codes.c.id)
+    ).scalar_one()
     db.session.commit()
-    resp = client.post("/api/v1/keys/", json={"label": "Gate", "code_id": code.id})
+    resp = client.post("/api/v1/keys/", json={"label": "Gate", "code_id": code_id})
     assert resp.status_code == 201
-    assert resp.get_json()["codeId"] == code.id
-    missing = client.post("/api/v1/keys/", json={"label": "G2", "code_id": code.id + 9})
+    assert resp.get_json()["codeId"] == code_id
+    missing = client.post("/api/v1/keys/", json={"label": "G2", "code_id": code_id + 9})
     assert missing.status_code == 404
 
 
