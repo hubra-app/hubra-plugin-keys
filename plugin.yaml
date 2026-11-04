@@ -11,3 +11,5 @@ modules: [inventory.keys]
 requires: [inventory]
 migrations: migrations
 frontend: frontend/dist/plugin.js
+# What this plugin extends (Hubra docs/plugins.md).
+uses: [routes, events, tables, nav, frontend]
