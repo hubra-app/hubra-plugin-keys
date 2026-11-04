@@ -33,10 +33,9 @@ class Key(db.Model):
         db.Integer, ForeignKey("members.id", ondelete="SET NULL"), nullable=True
     )
     deposit_chf: Mapped[float | None] = mapped_column(db.Numeric(10, 2), nullable=True)
-    # A combination or door code stored encrypted in the codes module.
-    code_id: Mapped[int | None] = mapped_column(
-        db.Integer, ForeignKey("codes.id", ondelete="SET NULL"), nullable=True
-    )
+    # A door code from the codes plugin, if that is installed. No foreign
+    # key: Keys works without Codes; the id is checked when it is set.
+    code_id: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

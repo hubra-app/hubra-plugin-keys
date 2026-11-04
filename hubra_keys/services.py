@@ -48,6 +48,15 @@ def key_to_dict(key: Key, with_history: bool = False) -> dict:
     return data
 
 
+def _code_exists(code_id: int) -> bool:
+    """True when the codes plugin is loaded and has this code."""
+    table = db.metadata.tables.get("codes")
+    if table is None:
+        return False
+    found = db.session.scalar(select(table.c.id).where(table.c.id == code_id))
+    return found is not None
+
+
 def _clean(data: dict, partial: bool) -> dict:
     out = {k: data[k] for k in _EDITABLE if k in data}
     for k in ("label", "number", "notes"):
@@ -74,11 +83,8 @@ def _clean(data: dict, partial: bool) -> dict:
             raise_error(400, "VALIDATION_ERROR", "deposit_chf must be a number")
     elif "deposit_chf" in out:
         out["deposit_chf"] = None
-    if out.get("code_id") is not None:
-        from hubra.core.models.code import Code
-
-        if db.session.get(Code, out["code_id"]) is None:
-            raise_error(404, "NOT_FOUND", f"Code {out['code_id']} not found")
+    if out.get("code_id") is not None and not _code_exists(out["code_id"]):
+        raise_error(404, "NOT_FOUND", f"Code {out['code_id']} not found")
     return out
 
 
