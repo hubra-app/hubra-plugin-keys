@@ -127,6 +127,8 @@ def test_overdue_invoice_notifies_key_managers(db, seeded_db, key, other_member)
         "invoice.overdue", tenant_id=None, member_id=other_member.id, invoice_id=1
     )
     assert "inventory.keys" in called
+    # Plugin handlers run after the commit (Hubra >= the plugin boundaries).
+    db.session.commit()
     notes = (
         db.session.query(Notification).filter_by(member_id=seeded_db["admin"].id).all()
     )
