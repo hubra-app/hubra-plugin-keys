@@ -98,3 +98,58 @@ class KeyHandover(db.Model):
     by: Mapped["Member | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "Member", foreign_keys=[by_id]
     )
+
+
+class MemberCard(db.Model):
+    """A member's card: the secret behind the QR code in their app.
+
+    One per member. Renewing it gives a new token, so a screenshot of the
+    old code stops working.
+    """
+
+    __tablename__ = "member_cards"
+
+    member_id: Mapped[int] = mapped_column(
+        db.Integer, ForeignKey("members.id", ondelete="CASCADE"), primary_key=True
+    )
+    token: Mapped[str] = mapped_column(db.String(64), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+
+class CheckIn(db.Model):
+    """A scanned card: who came, when, and to which event (if any)."""
+
+    __tablename__ = "checkins"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    member_id: Mapped[int] = mapped_column(
+        db.Integer,
+        ForeignKey("members.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    event_id: Mapped[int | None] = mapped_column(
+        db.Integer,
+        ForeignKey("club_events.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # Where, when it is not an event: "Workshop door".
+    place: Mapped[str | None] = mapped_column(db.String(120), nullable=True)
+    by_id: Mapped[int | None] = mapped_column(
+        db.Integer, ForeignKey("members.id", ondelete="SET NULL"), nullable=True
+    )
+    at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
+
+    member: Mapped["Member"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "Member", foreign_keys=[member_id]
+    )

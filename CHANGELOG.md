@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0
+
+- Member cards: every member has a QR code on their account page. A new code
+  ends the old one.
+- Check-in screen: scan member cards with the phone camera, a QR scanner or
+  the camera in the screen. At an event of the day the member is marked
+  present on its attendance list; without one it logs who came in and where.
+  New permission `keys.checkins.create`. New tables `member_cards`, `checkins`.
+
 ## 1.2.1
 
 - Release on a pushed v* tag (works with immutable releases) (#8)

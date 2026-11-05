@@ -4,7 +4,25 @@
 
 A plugin for [Hubra](https://hubra.club). Physical keys, cards and fobs: who holds which, with a handover log. Members see their keys on their account page.
 
-**Version** 1.0.0 · **Works with** Hubra >=0.1,<1 · **Plugin id** `keys`
+**Version** 1.3.0 · **Works with** Hubra >=0.2,<1 · **Plugin id** `keys`
+
+## Member cards and check-in
+
+Every member has a member card on their account page: a QR code with a link
+to the club's check-in screen. Whoever has the right **Check members in with
+their member card** (`keys.checkins.create`) opens *Check-in* and scans:
+
+- with the phone camera: the link opens the check-in screen, shows who it is,
+  and one tap checks them in;
+- with a USB or Bluetooth QR scanner, which types the code into the field;
+- in Chrome on Android, with the camera button on the screen itself.
+
+At an event of the day, a check-in marks the member present on the event's
+attendance list (an "excused" becomes "present"). Without an event it logs who
+came in and where (door, open workshop). The same card twice counts once.
+Suspended members and members who left are refused; an ended membership is
+shown in red. A member can make a new code, which ends the old one, including
+screenshots of it.
 
 ## Install
 
