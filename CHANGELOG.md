@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- Release on a pushed v* tag (works with immutable releases) (#8)
+
 ## 1.2.0
 
 - Works without the Codes plugin. Codes is no longer built into Hubra; a
