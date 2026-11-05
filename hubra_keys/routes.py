@@ -120,4 +120,4 @@ def retire_key(key_id: int):
     )
 
 
-from . import checkin  # noqa: E402,F401  (registers the card and check-in routes)
+from . import checkin, locks  # noqa: E402,F401  (register their routes)

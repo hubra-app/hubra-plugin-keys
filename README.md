@@ -24,6 +24,23 @@ Suspended members and members who left are refused; an ended membership is
 shown in red. A member can make a new code, which ends the old one, including
 screenshots of it.
 
+## Smart locks (Nuki)
+
+Enter the club's Nuki API token (Nuki Web → API) in the Keys module settings,
+then add each lock under *Smart locks* with its Nuki smartlock id and who may
+open it: all members or one group. Every 15 minutes, and after each change,
+Hubra brings Nuki in line:
+
+- each member who may open the lock gets a keypad code of their own (6 digits,
+  stored encrypted), shown under *My doors* on their account page;
+- the code is removed when the membership ends, the member is suspended or
+  leaves, or leaves the group;
+- with *Open in the app*, members get an Open button; each opening is logged as
+  a check-in at that door.
+
+When Nuki cannot be reached, the member is shown in red and the next sync tries
+again. Permission: **Manage smart locks** (`keys.locks.manage`).
+
 ## Install
 
 Platform admins install it from the plugin catalogue in the manager portal

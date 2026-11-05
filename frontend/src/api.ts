@@ -135,3 +135,50 @@ export const checkIn = (card: string, eventId: number | null, place: string | nu
     body: JSON.stringify({ card, eventId, place }),
   })
 export const undoCheckIn = (id: number) => apiFetch<void>(`/keys/checkins/${id}`, { method: 'DELETE' })
+
+// ── Smart locks ─────────────────────────────────────────────────────────────
+
+export interface LockAccess {
+  memberId: number
+  name: string | null
+  status: 'pending' | 'active' | 'failed'
+  error: string | null
+}
+
+export interface SmartLock {
+  id: number
+  name: string
+  smartlockId: number
+  groupId: number | null
+  keypad: boolean
+  appOpen: boolean
+  syncedAt: string | null
+  access?: LockAccess[]
+  sync?: { added: number; removed: number; failed: number }
+}
+
+export interface LockInput {
+  name: string
+  smartlockId: number
+  groupId: number | null
+  keypad: boolean
+  appOpen: boolean
+}
+
+export interface MyLock {
+  id: number
+  name: string
+  code: string | null
+  appOpen: boolean
+}
+
+export const listLocks = () =>
+  apiFetch<{ configured: boolean; locks: SmartLock[]; groups: { id: number; name: string }[] }>('/keys/locks')
+export const createLock = (input: LockInput) =>
+  apiFetch<SmartLock>('/keys/locks', { method: 'POST', body: JSON.stringify(input) })
+export const updateLock = (id: number, input: Partial<LockInput>) =>
+  apiFetch<SmartLock>(`/keys/locks/${id}`, { method: 'PATCH', body: JSON.stringify(input) })
+export const deleteLock = (id: number) => apiFetch<void>(`/keys/locks/${id}`, { method: 'DELETE' })
+export const syncLock = (id: number) => apiFetch<SmartLock>(`/keys/locks/${id}/sync`, { method: 'POST' })
+export const listMyLocks = () => apiFetch<MyLock[]>('/keys/locks/mine')
+export const openLock = (id: number) => apiFetch<{ opened: boolean }>(`/keys/locks/${id}/open`, { method: 'POST' })

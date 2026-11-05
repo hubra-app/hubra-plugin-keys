@@ -8,6 +8,11 @@
   the camera in the screen. At an event of the day the member is marked
   present on its attendance list; without one it logs who came in and where.
   New permission `keys.checkins.create`. New tables `member_cards`, `checkins`.
+- Smart locks (Nuki): each member who may open a door (all members or one
+  group) gets their own keypad code, removed again when the membership ends,
+  the member is suspended or leaves the group. Optional Open button in the app,
+  logged as a check-in. Synced every 15 minutes. New setting `nuki_token`,
+  permission `keys.locks.manage`, tables `smart_locks`, `lock_access`.
 
 ## 1.2.1
 
