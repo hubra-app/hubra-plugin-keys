@@ -4,14 +4,13 @@
 
 A plugin for [Hubra](https://hubra.club). Physical keys, cards and fobs: who holds which, with a handover log. Members see their keys on their account page.
 
-**Version** 1.0.0 · **Works with** Hubra >=0.1,<1 · **Plugin id** `keys`
+**Version** 1.2.1 · **Works with** Hubra >=0.2,<1 · **Plugin id** `keys`
 
 ## Install
 
-Platform admins install it from the plugin catalogue in the manager portal
+Platform admins install it from the Plugin catalogue in manage
 (official Marketplace, <https://plugins.hubra.club/index.json>, signed with
-the Hubra project key). Clubs then switch it on under Einstellungen → Module
-& Plugins.
+the Hubra project key). Clubs then switch it on under Einstellungen → Module.
 
 ## Develop
 
