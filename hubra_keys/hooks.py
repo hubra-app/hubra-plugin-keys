@@ -16,8 +16,8 @@ def on_invoice_overdue(tenant_id, member_id: int, invoice_id: int, **_):
     A physical key cannot be switched off like an RFID tag, so the club
     decides whether to ask for it back.
     """
-    from hubra.api.notifications.services import create_notification
-    from hubra.api.permissions import _get_member_permission_keys, member_is_admin
+    from hubra.core.notifications.services import create_notification
+    from hubra.core.permissions import member_has_permission
 
     keys = db.session.scalars(
         select(Key).where(Key.holder_id == member_id, Key.status == "issued")
@@ -31,7 +31,7 @@ def on_invoice_overdue(tenant_id, member_id: int, invoice_id: int, **_):
         for m in db.session.scalars(
             select(Member).where(Member.archived_at.is_(None))
         ).all()
-        if member_is_admin(m) or "keys.keys.manage" in _get_member_permission_keys(m)
+        if member_has_permission(m, "keys.keys.manage")
     ]
     for manager in managers:
         create_notification(
