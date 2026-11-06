@@ -9,6 +9,8 @@ tags: [inventory]
 package: hubra_keys
 modules: [inventory.keys]
 requires: [inventory]
+depends:
+  inventory: ">=2.0,<3"
 migrations: migrations
 frontend: frontend/dist/plugin.js
 # What this plugin extends (Hubra docs/plugins.md).
