@@ -51,12 +51,85 @@
     },
     "shell": {
       "nav": {
-        "keys": "Keys"
+        "keys": "Keys",
+        "checkin": "Check-in",
+        "locks": "Smart locks"
       }
     },
     "account": {
       "myKeys": "My keys",
       "keyDeposit": "Deposit CHF {{amount}}"
+    },
+    "card": {
+      "title": "Member card",
+      "qrAlt": "QR code of your member card",
+      "until": "Valid until {{date}}",
+      "hint": "Show this code at training or at the door to be checked in.",
+      "renew": "New code",
+      "renewConfirm": "Your current code stops working, including screenshots of it. Make a new one?",
+      "renewed": "Your member card has a new code.",
+      "status": {
+        "active": "Active member",
+        "trial": "Trial",
+        "suspended": "Suspended",
+        "inactive": "Inactive"
+      }
+    },
+    "checkin": {
+      "title": "Check-in",
+      "desc": "Scan member cards. At an event, members are marked present on its attendance list.",
+      "where": "Check in to",
+      "noEvent": "No event (door, open workshop)",
+      "place": "Place",
+      "placeHint": "Workshop door",
+      "code": "Card",
+      "codeHint": "Scan with a QR scanner, or paste the code or link",
+      "submit": "Check in",
+      "camera": "Scan with the camera",
+      "cameraOff": "Stop the camera",
+      "done": "{{name}} is checked in",
+      "again": "{{name}} was already checked in ({{when}})",
+      "expired": "Membership has ended",
+      "today": "Checked in today: {{count}}",
+      "none": "No one checked in yet",
+      "noneHint": "Members show the card on their account page.",
+      "undo": "Undo check-in"
+    },
+    "locks": {
+      "title": "Smart locks",
+      "desc": "Nuki locks: each member who may open a door gets their own keypad code, and loses it when their membership ends, they are suspended or leave the group.",
+      "add": "Add lock",
+      "edit": "Edit",
+      "save": "Save",
+      "delete": "Remove lock",
+      "deleteConfirm": "Remove {{name}}? The members' keypad codes are removed from the lock too.",
+      "none": "No smart locks yet",
+      "noneHint": "Add a Nuki lock with its id from Nuki Web.",
+      "noToken": "Enter the club's Nuki API token in the Keys module settings first (Manage → Modules → Keys).",
+      "everyone": "All members",
+      "who": "{{group}}: {{count}} with access",
+      "keypad": "keypad codes",
+      "appOpen": "open in the app",
+      "off": "no access",
+      "syncedAt": "Last synced {{when}}",
+      "notSynced": "Not synced yet",
+      "sync": "Sync now",
+      "synced": "Synced: {{added}} added, {{removed}} removed",
+      "syncFailed": "Nuki failed for {{count}} members; it is tried again in 15 minutes",
+      "name": "Name",
+      "namePlaceholder": "Werkstatt door",
+      "smartlockId": "Nuki smartlock id",
+      "smartlockIdHint": "Nuki Web → Smart Locks → the lock's id",
+      "group": "Who may open it",
+      "groupHint": "Members of this group, or all members. Suspended members and ended memberships never.",
+      "keypadLabel": "Keypad codes",
+      "keypadHint": "Each member gets their own 6-digit code for the Nuki keypad",
+      "appOpenLabel": "Open in the app",
+      "appOpenHint": "Members see an Open button on their account page; each opening is logged as a check-in",
+      "mine": "My doors",
+      "yourCode": "Your code",
+      "open": "Open",
+      "opened": "{{name}} is open"
     }
   },
   "de-CH": {
@@ -111,12 +184,85 @@
     },
     "shell": {
       "nav": {
-        "keys": "Schlüssel"
+        "keys": "Schlüssel",
+        "checkin": "Check-in",
+        "locks": "Smart Locks"
       }
     },
     "account": {
       "myKeys": "Mini Schlüssel",
       "keyDeposit": "Depot CHF {{amount}}"
+    },
+    "card": {
+      "title": "Mitgliederausweis",
+      "qrAlt": "QR-Code deines Mitgliederausweises",
+      "until": "Gültig bis {{date}}",
+      "hint": "Zeig diesen Code im Training oder an der Tür, um dich einzuchecken.",
+      "renew": "Neuer Code",
+      "renewConfirm": "Dein jetziger Code gilt danach nicht mehr, auch nicht als Screenshot. Neuen Code erstellen?",
+      "renewed": "Dein Mitgliederausweis hat einen neuen Code.",
+      "status": {
+        "active": "Aktivmitglied",
+        "trial": "Schnuppern",
+        "suspended": "Gesperrt",
+        "inactive": "Inaktiv"
+      }
+    },
+    "checkin": {
+      "title": "Check-in",
+      "desc": "Mitgliederausweise scannen. An einem Anlass werden die Mitglieder in der Präsenzliste als anwesend eingetragen.",
+      "where": "Einchecken für",
+      "noEvent": "Kein Anlass (Tür, offene Werkstatt)",
+      "place": "Ort",
+      "placeHint": "Werkstatttür",
+      "code": "Ausweis",
+      "codeHint": "Mit einem QR-Scanner scannen oder Code bzw. Link einfügen",
+      "submit": "Einchecken",
+      "camera": "Mit der Kamera scannen",
+      "cameraOff": "Kamera ausschalten",
+      "done": "{{name}} ist eingecheckt",
+      "again": "{{name}} war schon eingecheckt ({{when}})",
+      "expired": "Mitgliedschaft abgelaufen",
+      "today": "Heute eingecheckt: {{count}}",
+      "none": "Noch niemand eingecheckt",
+      "noneHint": "Mitglieder finden den Ausweis auf ihrer Kontoseite.",
+      "undo": "Check-in rückgängig machen"
+    },
+    "locks": {
+      "title": "Smart Locks",
+      "desc": "Nuki-Schlösser: Wer eine Tür öffnen darf, bekommt einen eigenen Keypad-Code und verliert ihn, wenn die Mitgliedschaft endet, das Mitglied gesperrt wird oder die Gruppe verlässt.",
+      "add": "Schloss hinzufügen",
+      "edit": "Bearbeiten",
+      "save": "Speichern",
+      "delete": "Schloss entfernen",
+      "deleteConfirm": "{{name}} entfernen? Die Keypad-Codes der Mitglieder werden auch vom Schloss gelöscht.",
+      "none": "Noch keine Smart Locks",
+      "noneHint": "Füge ein Nuki-Schloss mit seiner ID aus Nuki Web hinzu.",
+      "noToken": "Trag zuerst das Nuki-API-Token des Vereins in den Einstellungen des Moduls Schlüssel ein (Verwalten → Module → Schlüssel).",
+      "everyone": "Alle Mitglieder",
+      "who": "{{group}}: {{count}} mit Zugang",
+      "keypad": "Keypad-Codes",
+      "appOpen": "Öffnen in der App",
+      "off": "kein Zugang",
+      "syncedAt": "Zuletzt abgeglichen {{when}}",
+      "notSynced": "Noch nicht abgeglichen",
+      "sync": "Jetzt abgleichen",
+      "synced": "Abgeglichen: {{added}} neu, {{removed}} entfernt",
+      "syncFailed": "Nuki hat bei {{count}} Mitgliedern nicht geklappt; in 15 Minuten wird es wieder versucht",
+      "name": "Name",
+      "namePlaceholder": "Werkstatttür",
+      "smartlockId": "Nuki-Smartlock-ID",
+      "smartlockIdHint": "Nuki Web → Smart Locks → ID des Schlosses",
+      "group": "Wer darf öffnen",
+      "groupHint": "Mitglieder dieser Gruppe oder alle Mitglieder. Gesperrte und abgelaufene Mitgliedschaften nie.",
+      "keypadLabel": "Keypad-Codes",
+      "keypadHint": "Jedes Mitglied bekommt einen eigenen 6-stelligen Code für das Nuki-Keypad",
+      "appOpenLabel": "Öffnen in der App",
+      "appOpenHint": "Mitglieder sehen auf ihrer Kontoseite einen Knopf «Öffnen»; jedes Öffnen wird als Check-in erfasst",
+      "mine": "Meine Türen",
+      "yourCode": "Dein Code",
+      "open": "Öffnen",
+      "opened": "{{name}} ist offen"
     }
   }
 }

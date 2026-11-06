@@ -66,3 +66,119 @@ export const keyAction = (id: number, action: KeyAction, note?: string) =>
     method: 'POST',
     body: JSON.stringify({ note }),
   })
+
+// ── Member card and check-in ────────────────────────────────────────────────
+
+export interface MemberCard {
+  name: string
+  memberId: number
+  status: string
+  since: string | null
+  until: string | null
+  token: string
+  qr: string
+  renewedAt: string | null
+}
+
+export interface CardMember {
+  memberId: number
+  name: string
+  status: string
+  avatar: string | null
+  until: string | null
+  expired: boolean
+  blocked: string | null
+}
+
+export interface CheckIn {
+  id: number
+  memberId: number
+  name: string | null
+  eventId: number | null
+  place: string | null
+  at: string
+  already: boolean
+}
+
+export interface TodayEvent {
+  id: number
+  title: string
+  time: string | null
+  location: string | null
+}
+
+/** The app's check-in screen; the card's QR code points here. */
+export function checkinLink() {
+  const appRoot = window.location.origin + window.location.pathname.split('/app/')[0]
+  return `${appRoot}/app/inventory/checkin?card=`
+}
+
+/** The token from a scanned code: a whole link or just the token. */
+export function cardToken(scanned: string) {
+  const text = scanned.trim()
+  const m = text.match(/[?&]card=([^&#\s]+)/)
+  return m ? decodeURIComponent(m[1]) : text
+}
+
+const link = () => encodeURIComponent(checkinLink())
+export const getMyCard = () => apiFetch<MemberCard>(`/keys/card?link=${link()}`)
+export const renewMyCard = () => apiFetch<MemberCard>(`/keys/card/renew?link=${link()}`, { method: 'POST' })
+
+export const lookupCard = (card: string) =>
+  apiFetch<CardMember>(`/keys/checkins/lookup?card=${encodeURIComponent(card)}`)
+export const listTodayEvents = () => apiFetch<TodayEvent[]>('/keys/checkins/events')
+export const listCheckins = (eventId: number | null) =>
+  apiFetch<CheckIn[]>(`/keys/checkins${eventId ? `?eventId=${eventId}` : ''}`)
+export const checkIn = (card: string, eventId: number | null, place: string | null) =>
+  apiFetch<CardMember & { checkIn: CheckIn }>('/keys/checkins', {
+    method: 'POST',
+    body: JSON.stringify({ card, eventId, place }),
+  })
+export const undoCheckIn = (id: number) => apiFetch<void>(`/keys/checkins/${id}`, { method: 'DELETE' })
+
+// ── Smart locks ─────────────────────────────────────────────────────────────
+
+export interface LockAccess {
+  memberId: number
+  name: string | null
+  status: 'pending' | 'active' | 'failed'
+  error: string | null
+}
+
+export interface SmartLock {
+  id: number
+  name: string
+  smartlockId: number
+  groupId: number | null
+  keypad: boolean
+  appOpen: boolean
+  syncedAt: string | null
+  access?: LockAccess[]
+  sync?: { added: number; removed: number; failed: number }
+}
+
+export interface LockInput {
+  name: string
+  smartlockId: number
+  groupId: number | null
+  keypad: boolean
+  appOpen: boolean
+}
+
+export interface MyLock {
+  id: number
+  name: string
+  code: string | null
+  appOpen: boolean
+}
+
+export const listLocks = () =>
+  apiFetch<{ configured: boolean; locks: SmartLock[]; groups: { id: number; name: string }[] }>('/keys/locks')
+export const createLock = (input: LockInput) =>
+  apiFetch<SmartLock>('/keys/locks', { method: 'POST', body: JSON.stringify(input) })
+export const updateLock = (id: number, input: Partial<LockInput>) =>
+  apiFetch<SmartLock>(`/keys/locks/${id}`, { method: 'PATCH', body: JSON.stringify(input) })
+export const deleteLock = (id: number) => apiFetch<void>(`/keys/locks/${id}`, { method: 'DELETE' })
+export const syncLock = (id: number) => apiFetch<SmartLock>(`/keys/locks/${id}/sync`, { method: 'POST' })
+export const listMyLocks = () => apiFetch<MyLock[]>('/keys/locks/mine')
+export const openLock = (id: number) => apiFetch<{ opened: boolean }>(`/keys/locks/${id}/open`, { method: 'POST' })

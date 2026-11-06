@@ -118,3 +118,6 @@ def retire_key(key_id: int):
     return _done(
         KeyService.retire(key_id, get_current_member().id, _body().get("note"))
     )
+
+
+from . import checkin, locks  # noqa: E402,F401  (register their routes)
