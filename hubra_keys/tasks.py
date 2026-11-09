@@ -22,11 +22,13 @@ def sync_locks() -> dict:
 @celery_app.task(name="hubra_keys.tasks.link_items")
 @per_tenant_job("inventory.keys")
 def link_items() -> dict:
-    """Keys from before Keys made them inventory items get theirs."""
+    """Keys from before get their inventory item, and the Codes plugin's
+    codes come in as keys of the kind "code"."""
     from hubra.core.extensions import db
 
-    from .items import link_missing
+    from .items import link_missing, take_over_codes
 
     linked = link_missing()
+    codes = take_over_codes()
     db.session.commit()
-    return {"linked": linked}
+    return {"linked": linked, "codes": codes}

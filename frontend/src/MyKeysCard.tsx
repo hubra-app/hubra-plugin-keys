@@ -1,10 +1,13 @@
-import { Group, Paper, Text } from '@mantine/core'
+import { useState } from 'react'
+import { Button, Group, Paper, Text } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { IconKey } from '@tabler/icons-react'
 import { useT } from '@hubra/plugin-sdk'
 import { listMyKeys } from './api'
 
-/** Keys the member currently holds (inventory.keys module). */
+/** Keys and codes the member holds, is assigned to (directly or through a
+ * group) or every member may use (inventory.keys module). A code is hidden
+ * until tapped. */
 export function MyKeysCard() {
   const { t } = useT()
   const { data: keys = [] } = useQuery({
@@ -17,7 +20,7 @@ export function MyKeysCard() {
       <Group p="md" gap="sm" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
         <IconKey size={16} style={{ color: '#6b7480' }} />
         <Text fw={700} fz="md">
-          {t('account.myKeys', 'My keys')}
+          {t('account.myKeysCodes', 'My keys and codes')}
         </Text>
       </Group>
       {keys.map((k) => (
@@ -43,15 +46,31 @@ export function MyKeysCard() {
               </Text>
             )}
           </div>
-          {k.depositChf && (
+          {k.kind === 'code' && k.code ? (
+            <CodeValue code={k.code} />
+          ) : k.depositChf && k.mine ? (
             <Text fz="xs" c="dimmed" className="num">
               {t('account.keyDeposit', 'Deposit CHF {{amount}}', {
                 amount: k.depositChf,
               })}
             </Text>
-          )}
+          ) : null}
         </Group>
       ))}
     </Paper>
+  )
+}
+
+function CodeValue({ code }: { code: string }) {
+  const { t } = useT()
+  const [open, setOpen] = useState(false)
+  return open ? (
+    <Text fw={700} className="num" onClick={() => setOpen(false)} style={{ cursor: 'pointer' }}>
+      {code}
+    </Text>
+  ) : (
+    <Button size="compact-xs" variant="default" onClick={() => setOpen(true)}>
+      {t('account.showCode', 'Show code')}
+    </Button>
   )
 }

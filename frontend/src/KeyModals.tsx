@@ -1,10 +1,20 @@
 import { useMemo, useState } from 'react'
-import { Button, NumberInput, Select, Textarea, TextInput } from '@mantine/core'
+import {
+  Button,
+  Checkbox,
+  MultiSelect,
+  NumberInput,
+  PasswordInput,
+  Select,
+  Textarea,
+  TextInput,
+} from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { Field, Modal, listMembers, useT } from '@hubra/plugin-sdk'
 import {
   createKey,
   issueKey,
+  keyOptions,
   updateKey,
   type ClubKey,
   type KeyInput,
@@ -54,8 +64,18 @@ export function KeyFormModal({
           opens: clubKey.opens ?? '',
           deposit_chf: clubKey.depositChf ? Number(clubKey.depositChf) : null,
           notes: clubKey.notes ?? '',
+          public: !!clubKey.public,
+          member_ids: (clubKey.members ?? []).map((m) => m.id),
+          group_ids: (clubKey.groups ?? []).map((g) => g.id),
         },
   )
+  // A new code is typed in; an existing one is kept unless replaced.
+  const [code, setCode] = useState('')
+  const { data: members } = useQuery({
+    queryKey: ['members'],
+    queryFn: () => listMembers({ pageSize: 500 }),
+  })
+  const { data: options } = useQuery({ queryKey: ['keys', 'options'], queryFn: keyOptions })
 
   const save = async () => {
     const body: KeyInput = {
@@ -63,6 +83,7 @@ export function KeyFormModal({
       number: form.number || null,
       opens: form.opens || null,
       notes: form.notes || null,
+      ...(form.kind === 'code' && code ? { code } : {}),
     }
     setBusy(true)
     try {
@@ -109,12 +130,53 @@ export function KeyFormModal({
           <Select
             value={form.kind}
             onChange={(v) => setForm({ ...form, kind: (v as KeyKind) ?? 'key' })}
-            data={(['key', 'card', 'fob'] as const).map((k) => ({
+            data={(['key', 'card', 'fob', 'code'] as const).map((k) => ({
               value: k,
               label: t(`keys.kinds.${k}`, k),
             }))}
             allowDeselect={false}
           />
+        </Field>
+        {form.kind === 'code' && (
+          <Field label={t('keys.code', 'Code')}>
+            <PasswordInput
+              value={code}
+              onChange={(e) => setCode(e.currentTarget.value)}
+              placeholder={
+                clubKey !== 'new' && clubKey.hasCode
+                  ? t('keys.codeKeep', 'Leave empty to keep the code')
+                  : '1234'
+              }
+              autoComplete="off"
+            />
+          </Field>
+        )}
+        <Field label={t('keys.access', 'Who may use it')}>
+          <Checkbox
+            checked={!!form.public}
+            onChange={(e) => setForm({ ...form, public: e.currentTarget.checked })}
+            label={t('keys.public', 'Every member (public)')}
+            mb={8}
+          />
+          {!form.public && (
+            <>
+              <MultiSelect
+                searchable
+                mb={8}
+                placeholder={t('keys.assignMembers', 'Members …')}
+                data={(members?.members ?? []).map((m) => ({ value: String(m.id), label: m.name }))}
+                value={(form.member_ids ?? []).map(String)}
+                onChange={(v) => setForm({ ...form, member_ids: v.map(Number) })}
+              />
+              <MultiSelect
+                searchable
+                placeholder={t('keys.assignGroups', 'Groups …')}
+                data={(options?.groups ?? []).map((g) => ({ value: String(g.id), label: g.name }))}
+                value={(form.group_ids ?? []).map(String)}
+                onChange={(v) => setForm({ ...form, group_ids: v.map(Number) })}
+              />
+            </>
+          )}
         </Field>
         <Field label={t('keys.opens', 'Opens')}>
           <TextInput

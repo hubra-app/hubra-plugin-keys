@@ -16,6 +16,12 @@ opens, deposit, hand out, take back, lost, found, retire); the handovers are
 in the item's history there. Keys talks to Inventory through its contracts
 only, never its code or tables.
 
+A key of the kind **code** is a door code or passcode, stored encrypted. A
+key or code is for every member (public) or assigned to several members and
+groups; members find theirs under *My keys and codes* on their account page.
+Codes from the Codes plugin move in by themselves (Codes 2.1 or newer); then
+Codes can be uninstalled.
+
 ## Member cards and check-in
 
 Every member has a member card on their account page: a QR code with a link

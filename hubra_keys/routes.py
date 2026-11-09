@@ -11,7 +11,7 @@ from hubra.core.errors import api_error
 from hubra.core.extensions import db
 
 from .models import Key
-from .services import KeyService, key_to_dict
+from .services import KeyService, key_to_dict, keys_for, plain_code
 
 keys_bp = Blueprint("keys_bp", __name__)
 
@@ -36,20 +36,42 @@ def list_keys():
 @keys_bp.get("/mine")
 @require_member
 def my_keys():
-    """Keys the signed-in member holds; no permission needed."""
-    keys = KeyService.list(holder_id=get_current_member().id)
-    # The holder's view: no manager notes, no code link, no retired keys.
-    hidden = ("notes", "codeId", "holderId", "holderName")
-    return (
-        jsonify(
-            [
-                {k: v for k, v in key_to_dict(key).items() if k not in hidden}
-                for key in keys
-                if key.status != "retired"
-            ]
-        ),
-        200,
-    )
+    """Keys and codes the signed-in member holds, may use (public) or is
+    assigned to (directly or through a group); no permission needed. A
+    code comes with the code itself."""
+    me = get_current_member()
+    # The member's view: no manager notes, no import marker, no other people.
+    hidden = ("notes", "codeId", "holderId", "holderName", "members", "groups", "itemId")
+    out = []
+    for key in keys_for(me):
+        row = {k: v for k, v in key_to_dict(key).items() if k not in hidden}
+        row["mine"] = key.holder_id == me.id
+        if key.kind == "code":
+            row["code"] = plain_code(key)
+        out.append(row)
+    return jsonify(out), 200
+
+
+@keys_bp.get("/options")
+@permission_required("keys", "read", "View keys")
+def key_options():
+    """The groups a key can be assigned to."""
+    from hubra.core.models.group import Group
+
+    groups = db.session.scalars(select(Group).order_by(Group.name)).all()
+    return jsonify({"groups": [{"id": g.id, "name": g.name} for g in groups]}), 200
+
+
+@keys_bp.get("/<int:key_id>/code")
+@permission_required("keys", "read", "View keys")
+def reveal_code(key_id: int):
+    """A code key's code, for the managers; each look is in the audit log."""
+    from hubra.core.utils import log_audit
+
+    key = KeyService.get(key_id)
+    log_audit(get_current_member().id, "reveal_code", "Key", key.id, key.label)
+    db.session.commit()
+    return jsonify({"code": plain_code(key)}), 200
 
 
 @keys_bp.get("/<int:key_id>")

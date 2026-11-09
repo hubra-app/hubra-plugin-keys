@@ -63,11 +63,19 @@ module = Module(
         "inventory.items.save": ">=1,<2",
         "inventory.items.delete": ">=1,<2",
         "inventory.items.history.add": ">=1,<2",
+        # Optional: the Codes plugin's codes move in as keys of kind "code".
+        "codes.codes.export": ">=1,<2",
         "inventory.item.saved": ">=1,<2",
         "inventory.item.deleted": ">=1,<2",
     },
+    # Key rotation re-encrypts these (FERNET_KEY / club keys).
+    encrypted_columns=(
+        ("keys", "id", "secret", " AND secret IS NOT NULL"),
+        ("lock_access", "id", "code", " AND code IS NOT NULL"),
+    ),
     tables=(
         "keys",
+        "key_assignments",
         "key_handovers",
         "member_cards",
         "checkins",

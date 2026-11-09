@@ -25,7 +25,14 @@ import logging
 
 from sqlalchemy import select
 
-from hubra.core.contracts import SYSTEM, ActionUnavailable, Refused, call, query
+from hubra.core.contracts import (
+    SYSTEM,
+    ActionUnavailable,
+    Refused,
+    available,
+    call,
+    query,
+)
 from hubra.core.extensions import db
 from hubra.core.utils import log_audit
 
@@ -234,3 +241,41 @@ def on_item_deleted(tenant_id=None, item_id: int = 0, **_) -> None:
         return
     log_audit(None, "delete_key", "Key", key.id, key.label)
     db.session.delete(key)
+
+
+def take_over_codes() -> int:
+    """Codes from the Codes plugin become keys of the kind "code" here.
+
+    Read through Codes' query ``codes.codes.export``, never its table; each
+    code is taken once (``Key.code_id`` keeps which code it came from). Does
+    nothing when Codes isn't installed or is off. Returns how many came in.
+    """
+    from hubra.core.crypto import encrypt_code
+
+    from .services import SECRET_PURPOSE
+
+    if not available("codes.codes.export"):
+        return 0
+    taken = set(
+        db.session.scalars(
+            select(Key.code_id).where(Key.kind == "code", Key.code_id.is_not(None))
+        ).all()
+    )
+    done = 0
+    for c in query("codes.codes.export", actor=SYSTEM):
+        if c["id"] in taken:
+            continue
+        key = Key(
+            label=(c["name"] or "Code")[:120],
+            kind="code",
+            secret=encrypt_code(c["code"], SECRET_PURPOSE) if c["code"] else None,
+            notes=c.get("description"),
+            status="available" if c.get("is_active", True) else "retired",
+            code_id=c["id"],
+        )
+        db.session.add(key)
+        db.session.flush()
+        log_audit(None, "create_key", "Key", key.id, f"{key.label} (from Codes)")
+        push(key)
+        done += 1
+    return done

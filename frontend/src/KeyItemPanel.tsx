@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button, Group, SimpleGrid } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PanelField, PanelSection, useAuth, useT, useToast } from '@hubra/plugin-sdk'
-import { getKeyByItem, keyAction, type ClubKey, type KeyAction } from './api'
+import { getKeyByItem, keyAction, revealCode, type ClubKey, type KeyAction } from './api'
 import { IssueModal, KeyFormModal, STATUS_COLORS } from './KeyModals'
 
 /**
@@ -20,6 +20,7 @@ export function KeyItemPanel({ itemId }: { itemId: number }) {
   const [editing, setEditing] = useState(false)
   const [issuing, setIssuing] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [shown, setShown] = useState<string | null>(null)
 
   const { data: key } = useQuery({
     queryKey: ['keys', 'item', itemId],
@@ -50,6 +51,23 @@ export function KeyItemPanel({ itemId }: { itemId: number }) {
   }
 
   const statusLabel = t(`keys.status.${key.status}`, key.status)
+  const isCode = key.kind === 'code'
+  const assigned = [
+    ...(key.members ?? []).map((m) => m.name ?? ''),
+    ...(key.groups ?? []).map((g) => g.name ?? ''),
+  ].filter(Boolean)
+  const access = key.public
+    ? t('keys.publicShort', 'Every member')
+    : assigned.length
+      ? assigned.join(', ')
+      : t('keys.nobodyAssigned', 'Nobody assigned')
+  const show = async () => {
+    try {
+      setShown((await revealCode(key.id)).code ?? '')
+    } catch (err) {
+      fail(err)
+    }
+  }
 
   return (
     <>
@@ -67,12 +85,27 @@ export function KeyItemPanel({ itemId }: { itemId: number }) {
           <PanelField label={t('keys.statusLabel', 'Status')}>
             <span style={{ color: STATUS_COLORS[key.status], fontWeight: 600 }}>{statusLabel}</span>
           </PanelField>
-          <PanelField label={t('keys.holder', 'Holder')}>{key.holderName ?? '—'}</PanelField>
+          {isCode ? (
+            <PanelField label={t('keys.code', 'Code')}>
+              {shown !== null ? (
+                <span className="num">{shown || '—'}</span>
+              ) : key.hasCode ? (
+                <Button size="compact-xs" variant="subtle" onClick={show}>
+                  {t('keys.showCode', 'Show')}
+                </Button>
+              ) : (
+                '—'
+              )}
+            </PanelField>
+          ) : (
+            <PanelField label={t('keys.holder', 'Holder')}>{key.holderName ?? '—'}</PanelField>
+          )}
           <PanelField label={t('keys.kind', 'Type')}>{t(`keys.kinds.${key.kind}`, key.kind)}</PanelField>
           <PanelField label={t('keys.number', 'Number')}>
             <span className="num">{key.number ?? '—'}</span>
           </PanelField>
           <PanelField label={t('keys.opens', 'Opens')}>{key.opens ?? '—'}</PanelField>
+          <PanelField label={t('keys.access', 'Who may use it')}>{access}</PanelField>
           <PanelField label={t('keys.deposit', 'Deposit')}>
             {key.depositChf ? <span className="num">CHF {key.depositChf}</span> : '—'}
           </PanelField>
@@ -84,7 +117,7 @@ export function KeyItemPanel({ itemId }: { itemId: number }) {
         )}
         {canManage && (
           <Group gap={8} mt="md">
-            {key.status === 'available' && (
+            {key.status === 'available' && !isCode && (
               <Button size="sm" onClick={() => setIssuing(true)} disabled={busy}>
                 {t('keys.issue', 'Hand out')}
               </Button>
@@ -94,7 +127,7 @@ export function KeyItemPanel({ itemId }: { itemId: number }) {
                 {t('keys.return', 'Take back')}
               </Button>
             )}
-            {(key.status === 'available' || key.status === 'issued') && (
+            {(key.status === 'available' || key.status === 'issued') && !isCode && (
               <Button size="sm" variant="default" onClick={() => run(key, 'lost')} disabled={busy}>
                 {t('keys.markLost', 'Mark as lost')}
               </Button>

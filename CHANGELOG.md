@@ -20,6 +20,17 @@
   deleted in Inventory changes the key. Keys owns the status and holder
   (handed out = "in use"); one set by hand in Inventory is put back. An item
   that stops being a key deletes the key, unless somebody holds it.
+- **Codes are keys too**: a key of the new kind "code" keeps a door code,
+  lock combination or passcode, encrypted (`keys.secret`, re-encrypted on
+  key rotation). Managers see it with "Show" (each look is in the audit
+  log); a code isn't handed out. The Codes plugin's codes come in as code
+  keys through its query `codes.codes.export` (Codes 2.1) in the same job,
+  each once; after that Codes can be switched off and uninstalled.
+- **Who may use a key**: every member (public), or several members and
+  groups at once (new table `key_assignments`). "My keys and codes" on the
+  account page lists what a member holds, is assigned to (directly or
+  through a group) or every member may use, with the code behind a "Show"
+  button. Setting a Codes code on a key (`code_id`) is gone.
 - Goes through Inventory's contracts only (`inventory.items.save`,
   `.delete`, `.history.add`, `.get`, events `inventory.item.saved` and
   `.deleted`): needs Inventory 2.2 or newer.

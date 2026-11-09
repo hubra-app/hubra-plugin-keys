@@ -1,6 +1,7 @@
 import { apiFetch } from '@hubra/plugin-sdk'
 
-export type KeyKind = 'key' | 'card' | 'fob'
+/** "code": a door code or passcode, kept encrypted. */
+export type KeyKind = 'key' | 'card' | 'fob' | 'code'
 export type KeyStatus = 'available' | 'issued' | 'lost' | 'retired'
 
 export interface KeyHandover {
@@ -26,6 +27,15 @@ export interface ClubKey {
   codeId: number | null
   /** The key's item in Inventory (type "Key"). */
   itemId: number | null
+  hasCode?: boolean
+  /** Every member may use it. */
+  public?: boolean
+  /** Assigned to these members and groups (several of each). */
+  members?: { id: number; name: string | null }[]
+  groups?: { id: number; name: string | null }[]
+  /** Only in "my keys": the code of a code key, and whether I hold it. */
+  code?: string | null
+  mine?: boolean
   notes: string | null
   updatedAt: string | null
   history?: KeyHandover[]
@@ -38,12 +48,21 @@ export interface KeyInput {
   opens?: string | null
   deposit_chf?: number | null
   notes?: string | null
+  /** A code key's code; "" clears it. Left out keeps it. */
+  code?: string
+  public?: boolean
+  member_ids?: number[]
+  group_ids?: number[]
 }
 
 export const listKeys = () => apiFetch<ClubKey[]>('/keys/')
 export const listMyKeys = () => apiFetch<ClubKey[]>('/keys/mine')
 export const getKey = (id: number) => apiFetch<ClubKey>(`/keys/${id}`)
 /** The key behind an inventory item; 404 for an item that is no key. */
+/** A code key's code (managers; each look is in the audit log). */
+export const revealCode = (id: number) => apiFetch<{ code: string | null }>(`/keys/${id}/code`)
+export const keyOptions = () =>
+  apiFetch<{ groups: { id: number; name: string }[] }>('/keys/options')
 export const getKeyByItem = (itemId: number) => apiFetch<ClubKey>(`/keys/by-item/${itemId}`)
 
 export const createKey = (input: KeyInput) =>

@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import sqlalchemy as sa
 from sqlalchemy import DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from hubra.core.extensions import db
 
-KEY_KINDS = ("key", "card", "fob")
+# "code": a door code, lock combination or passcode, stored encrypted in
+# ``secret`` (the Codes plugin's codes move in as these).
+KEY_KINDS = ("key", "card", "fob", "code")
 KEY_STATUSES = ("available", "issued", "lost", "retired")
 HANDOVER_ACTIONS = ("issue", "return", "lost", "found", "retire")
 
@@ -33,8 +36,9 @@ class Key(db.Model):
         db.Integer, ForeignKey("members.id", ondelete="SET NULL"), nullable=True
     )
     deposit_chf: Mapped[float | None] = mapped_column(db.Numeric(10, 2), nullable=True)
-    # A door code from the codes plugin, if that is installed. No foreign
-    # key: Keys works without Codes; the id is checked when it is set.
+    # For a key of the kind "code" taken over from the Codes plugin: the
+    # code it came from, so it is taken only once. (Before 1.4 a key could
+    # link a Codes code here; those links stay as they were.)
     code_id: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
     # The key's item in Inventory (type "Key"). No foreign key: Inventory's
     # table is Inventory's; the item is kept in line through its contracts
@@ -43,6 +47,13 @@ class Key(db.Model):
         db.Integer, nullable=True, unique=True, index=True
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # The code of a key of the kind "code", encrypted (purpose keys.secret).
+    secret: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Who may use it: every member (public), or the members and groups in
+    # ``assignments``. Who has a physical key right now is ``holder_id``.
+    public: Mapped[bool] = mapped_column(
+        db.Boolean, nullable=False, default=False, server_default=sa.false()
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -64,9 +75,41 @@ class Key(db.Model):
         cascade="all, delete-orphan",
         order_by="KeyHandover.at.desc()",
     )
+    assignments: Mapped[list["KeyAssignment"]] = relationship(
+        "KeyAssignment", cascade="all, delete-orphan", lazy="selectin"
+    )
 
     def __repr__(self) -> str:
         return f"<Key id={self.id} label={self.label!r} status={self.status}>"
+
+
+class KeyAssignment(db.Model):
+    """A member or a group a key (or code) is assigned to. A key can have
+    several of each; one row names either a member or a group."""
+
+    __tablename__ = "key_assignments"
+    __table_args__ = (
+        db.UniqueConstraint("key_id", "member_id", name="uq_key_assignment_member"),
+        db.UniqueConstraint("key_id", "group_id", name="uq_key_assignment_group"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key_id: Mapped[int] = mapped_column(
+        db.Integer, ForeignKey("keys.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    member_id: Mapped[int | None] = mapped_column(
+        db.Integer, ForeignKey("members.id", ondelete="CASCADE"), nullable=True
+    )
+    group_id: Mapped[int | None] = mapped_column(
+        db.Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=True
+    )
+
+    member: Mapped["Member | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "Member", foreign_keys=[member_id], lazy="selectin"
+    )
+    group: Mapped["Group | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "Group", foreign_keys=[group_id], lazy="selectin"
+    )
 
 
 class KeyHandover(db.Model):
