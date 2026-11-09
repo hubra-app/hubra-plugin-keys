@@ -8,6 +8,9 @@ from hubra.core.modules.events import INVOICE_OVERDUE
 
 module = Module(
     code="inventory.keys",
+    # Access the standard roles get when a club first switches it on
+    # (docs/roles.md in hubra-app/hubra).
+    role_defaults={"board": "view"},
     name="Keys",
     description=(
         "Physical keys, cards and fobs: who holds which, with a handover log. "
