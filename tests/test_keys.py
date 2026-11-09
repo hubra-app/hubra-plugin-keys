@@ -57,7 +57,9 @@ def test_create_key_validates(client, auth_headers, key):
     for body in (
         {"label": 5},
         {"label": "x", "notes": ["a"]},
-        {"label": "x", "code_id": "1"},
+        {"label": "x", "public": "yes"},
+        {"label": "x", "member_ids": "1"},
+        {"label": "x", "code": 1234},
         {"label": "x", "deposit_chf": "NaN"},
     ):
         assert client.post("/api/v1/keys/", json=body).status_code == 400, body
@@ -69,30 +71,6 @@ def _now():
     from datetime import datetime, timezone
 
     return datetime.now(timezone.utc)
-
-
-def test_a_door_code_needs_the_codes_plugin(client, auth_headers, db):
-    """Keys works without Codes: code_id is checked against the codes table
-    only when that plugin is loaded, and refused otherwise."""
-    if "codes" not in db.metadata.tables:
-        resp = client.post("/api/v1/keys/", json={"label": "Gate", "code_id": 1})
-        assert resp.status_code == 404
-        return
-    # The codes table, from the plugin or (older Hubra) built in.
-    codes = db.metadata.tables["codes"]
-    code_id = db.session.execute(
-        codes.insert()
-        .values(
-            name="Gate", code="x", is_active=True, created_at=_now(), updated_at=_now()
-        )
-        .returning(codes.c.id)
-    ).scalar_one()
-    db.session.commit()
-    resp = client.post("/api/v1/keys/", json={"label": "Gate", "code_id": code_id})
-    assert resp.status_code == 201
-    assert resp.get_json()["codeId"] == code_id
-    missing = client.post("/api/v1/keys/", json={"label": "G2", "code_id": code_id + 9})
-    assert missing.status_code == 404
 
 
 def test_keys_has_no_foreign_key_to_codes():
@@ -120,7 +98,10 @@ def test_issue_and_return_key_logs_history(client, auth_headers, key, other_memb
     resp = client.post(f"/api/v1/keys/{key.id}/return", json={"note": "ok"})
     body = resp.get_json()
     assert body["status"] == "available" and body["holderId"] is None
-    assert [h["action"] for h in body["history"]] == ["return", "issue"]
+    # The handovers are the history of the key's item in Inventory.
+    history = client.get(f"/api/v1/inventory/{body['itemId']}/history").get_json()
+    assert [h["action"] for h in history] == ["return", "issue"]
+    assert history[0]["note"] == "ok" and history[1]["member_name"] == "Hanna Holder"
 
 
 def test_lost_and_found(client, auth_headers, key):

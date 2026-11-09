@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.4.0
+
+- Keys live in Inventory: each key is an item of the type "Key", shown in
+  the inventory list, its filters, the "By type" view and search with the
+  club's other items. The Keys page is gone; its menu entry too, and
+  `/app/inventory/keys` opens the inventory on keys (`?type=Key`), whose
+  table shows number, status and who holds each key.
+- A key's inventory page has a key panel: status, holder, kind, what it
+  opens, deposit, and the buttons to hand it out, take it back, mark it lost
+  or found and retire it. Who holds it is the item's "Held by".
+- The handover log moved into the item's history in Inventory. Handovers
+  from before are moved there (with their dates) by the job
+  `keys-link-items` (every 5 minutes) after the upgrade, which also gives
+  every existing key its inventory item. Nothing is lost; `key_handovers` is
+  only used while a key has no item yet. New column `keys.item_id`.
+- Both ways: a key added, renamed or deleted here changes its item, and an
+  item of the type "Key" added (Inventory → New item → Key), renamed or
+  deleted in Inventory changes the key. Keys owns the status and holder
+  (handed out = "in use"); one set by hand in Inventory is put back. An item
+  that stops being a key deletes the key, unless somebody holds it.
+- **Codes are keys too**: a key of the new kind "code" keeps a door code,
+  lock combination or passcode, encrypted (`keys.secret`, re-encrypted on
+  key rotation). Managers see it with "Show" (each look is in the audit
+  log); a code isn't handed out. The Codes plugin's codes come in as code
+  keys through its query `codes.codes.export` (Codes 2.1) in the same job,
+  each once; after that Codes can be switched off and uninstalled.
+- **Who may use a key**: every member (public), or several members and
+  groups at once (new table `key_assignments`). "My keys and codes" on the
+  account page lists what a member holds, is assigned to (directly or
+  through a group) or every member may use, with the code behind a "Show"
+  button. Setting a Codes code on a key (`code_id`) is gone.
+- Goes through Inventory's contracts only (`inventory.items.save`,
+  `.delete`, `.history.add`, `.get`, events `inventory.item.saved` and
+  `.deleted`): needs Inventory 2.2 or newer.
+
 ## 1.3.0
 
 - Member cards: every member has a QR code on their account page. A new code

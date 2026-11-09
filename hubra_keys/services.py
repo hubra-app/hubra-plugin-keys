@@ -12,12 +12,16 @@ from hubra.core.errors import raise_error
 from hubra.core.extensions import db
 from hubra.core.models.member import Member
 
-from .models import KEY_KINDS, KEY_STATUSES, Key, KeyHandover
+from . import items
+from .models import KEY_KINDS, KEY_STATUSES, Key, KeyAssignment
 
-_EDITABLE = ("label", "number", "kind", "opens", "deposit_chf", "code_id", "notes")
+_EDITABLE = ("label", "number", "kind", "opens", "deposit_chf", "notes", "public")
+SECRET_PURPOSE = "keys.secret"
 
 
 def key_to_dict(key: Key, with_history: bool = False) -> dict:
+    """A key as the app sees it. Its history is the item's in Inventory
+    (``with_history`` is kept for older callers and adds nothing)."""
     data = {
         "id": key.id,
         "label": key.label,
@@ -29,32 +33,23 @@ def key_to_dict(key: Key, with_history: bool = False) -> dict:
         "holderName": key.holder.name if key.holder else None,
         "depositChf": str(key.deposit_chf) if key.deposit_chf is not None else None,
         "codeId": key.code_id,
+        "hasCode": bool(key.secret),
+        "public": bool(key.public),
+        "members": [
+            {"id": a.member_id, "name": a.member.name if a.member else None}
+            for a in key.assignments
+            if a.member_id is not None
+        ],
+        "groups": [
+            {"id": a.group_id, "name": a.group.name if a.group else None}
+            for a in key.assignments
+            if a.group_id is not None
+        ],
+        "itemId": key.item_id,
         "notes": key.notes,
         "updatedAt": key.updated_at.isoformat() if key.updated_at else None,
     }
-    if with_history:
-        data["history"] = [
-            {
-                "id": h.id,
-                "action": h.action,
-                "memberId": h.member_id,
-                "memberName": h.member.name if h.member else None,
-                "byName": h.by.name if h.by else None,
-                "note": h.note,
-                "at": h.at.isoformat(),
-            }
-            for h in key.handovers
-        ]
     return data
-
-
-def _code_exists(code_id: int) -> bool:
-    """True when the codes plugin is loaded and has this code."""
-    table = db.metadata.tables.get("codes")
-    if table is None:
-        return False
-    found = db.session.scalar(select(table.c.id).where(table.c.id == code_id))
-    return found is not None
 
 
 def _clean(data: dict, partial: bool) -> dict:
@@ -62,8 +57,8 @@ def _clean(data: dict, partial: bool) -> dict:
     for k in ("label", "number", "notes"):
         if out.get(k) is not None and not isinstance(out[k], str):
             raise_error(400, "VALIDATION_ERROR", f"{k} must be text")
-    if out.get("code_id") is not None and not isinstance(out["code_id"], int):
-        raise_error(400, "VALIDATION_ERROR", "code_id must be a number")
+    if "public" in out and not isinstance(out["public"], bool):
+        raise_error(400, "VALIDATION_ERROR", "public must be true or false")
     if not partial and not (data.get("label") or "").strip():
         raise_error(400, "VALIDATION_ERROR", "label is required")
     if "label" in out:
@@ -83,9 +78,89 @@ def _clean(data: dict, partial: bool) -> dict:
             raise_error(400, "VALIDATION_ERROR", "deposit_chf must be a number")
     elif "deposit_chf" in out:
         out["deposit_chf"] = None
-    if out.get("code_id") is not None and not _code_exists(out["code_id"]):
-        raise_error(404, "NOT_FOUND", f"Code {out['code_id']} not found")
     return out
+
+
+def _ids(data: dict, field: str) -> list[int] | None:
+    if field not in data:
+        return None
+    raw = data[field]
+    if not isinstance(raw, list) or not all(
+        isinstance(i, int) and not isinstance(i, bool) for i in raw
+    ):
+        raise_error(400, "VALIDATION_ERROR", f"{field} must be a list of ids")
+    return list(dict.fromkeys(raw))
+
+
+def _replace(key: Key, field: str, ids: list[int]) -> None:
+    """Assign the key to exactly *ids* (members or groups): keep the rows
+    that stay, add the new ones, drop the rest."""
+    keep = [a for a in key.assignments if getattr(a, field) is None or getattr(a, field) in ids]
+    have = {getattr(a, field) for a in keep}
+    key.assignments = keep + [KeyAssignment(**{field: i}) for i in ids if i not in have]
+
+
+def _apply_extras(key: Key, data: dict) -> None:
+    """The code of a code key, and who the key is assigned to."""
+    from hubra.core.crypto import encrypt_code
+    from hubra.core.models.group import Group
+
+    if "code" in data:
+        code = data["code"]
+        if code is not None and not isinstance(code, str):
+            raise_error(400, "VALIDATION_ERROR", "code must be text")
+        code = (code or "").strip()
+        key.secret = encrypt_code(code, SECRET_PURPOSE) if code else None
+    member_ids = _ids(data, "member_ids")
+    group_ids = _ids(data, "group_ids")
+    if member_ids is not None:
+        for mid in member_ids:
+            m = db.session.get(Member, mid)
+            if m is None or m.archived_at is not None:
+                raise_error(404, "NOT_FOUND", f"Member {mid} not found")
+        _replace(key, "member_id", member_ids)
+    if group_ids is not None:
+        for gid in group_ids:
+            if db.session.get(Group, gid) is None:
+                raise_error(404, "NOT_FOUND", f"Group {gid} not found")
+        _replace(key, "group_id", group_ids)
+
+
+def plain_code(key: Key) -> str | None:
+    """The code of a code key in clear text; "" when it no longer opens."""
+    from cryptography.fernet import InvalidToken
+
+    from hubra.core.crypto import decrypt_code
+
+    if not key.secret:
+        return None
+    try:
+        return decrypt_code(key.secret, SECRET_PURPOSE)
+    except InvalidToken:
+        return ""
+
+
+def keys_for(member: Member) -> list[Key]:
+    """Keys the member holds, may use (public) or is assigned to, directly
+    or through a group. Retired ones left out."""
+    from sqlalchemy import or_
+
+    from hubra.core.models.member import member_groups
+
+    my_groups = select(member_groups.c.group_id).where(
+        member_groups.c.member_id == member.id
+    )
+    assigned = select(KeyAssignment.key_id).where(
+        or_(KeyAssignment.member_id == member.id, KeyAssignment.group_id.in_(my_groups))
+    )
+    return list(
+        db.session.scalars(
+            select(Key)
+            .where(Key.status != "retired")
+            .where(or_(Key.holder_id == member.id, Key.public.is_(True), Key.id.in_(assigned)))
+            .order_by(Key.label)
+        ).all()
+    )
 
 
 def _check_number_free(number: str | None, key_id: int | None = None) -> None:
@@ -121,8 +196,10 @@ class KeyService:
         _check_number_free(values.get("number"))
         key = Key(**values)
         db.session.add(key)
+        _apply_extras(key, data)
         db.session.flush()
         log_audit(actor_id, "create_key", "Key", key.id, key.label)
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -133,8 +210,10 @@ class KeyService:
             _check_number_free(values["number"], key.id)
         for field, value in values.items():
             setattr(key, field, value)
+        _apply_extras(key, data)
         db.session.flush()
         log_audit(actor_id, "update_key", "Key", key.id, key.label)
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -143,6 +222,7 @@ class KeyService:
         if key.status == "issued":
             raise_error(409, "CONFLICT", "Take the key back before deleting it")
         log_audit(actor_id, "delete_key", "Key", key.id, key.label)
+        items.remove(key, actor_id)
         db.session.delete(key)
         db.session.flush()
 
@@ -150,19 +230,14 @@ class KeyService:
 
     @staticmethod
     def _log(key: Key, action: str, member_id, actor_id, note) -> None:
-        db.session.add(
-            KeyHandover(
-                key_id=key.id,
-                action=action,
-                member_id=member_id,
-                by_id=actor_id,
-                note=note,
-            )
-        )
+        """Into the history of the key's item in Inventory."""
+        items.record(key, action, member_id, actor_id, note)
 
     @staticmethod
     def issue(key_id: int, member_id: int, actor_id: int | None, note=None) -> Key:
         key = KeyService.get(key_id)
+        if key.kind == "code":
+            raise_error(409, "CODE_ASSIGNED", "A code isn't handed out: assign it instead")
         if key.status != "available":
             raise_error(409, "CONFLICT", f"Key is {key.status}, not available")
         member = db.session.get(Member, member_id)
@@ -173,6 +248,7 @@ class KeyService:
         KeyService._log(key, "issue", member_id, actor_id, note)
         log_audit(actor_id, "issue_key", "Key", key.id, f"{key.label} → {member.name}")
         db.session.flush()
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -185,6 +261,7 @@ class KeyService:
         key.status = "available"
         key.holder_id = None
         db.session.flush()
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -196,6 +273,7 @@ class KeyService:
         log_audit(actor_id, "lose_key", "Key", key.id, key.label)
         key.status = "lost"
         db.session.flush()
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -208,6 +286,7 @@ class KeyService:
         key.status = "available"
         key.holder_id = None
         db.session.flush()
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -218,4 +297,5 @@ class KeyService:
         KeyService._log(key, "retire", None, actor_id, note)
         key.status = "retired"
         db.session.flush()
+        items.push(key, actor_id)
         return key

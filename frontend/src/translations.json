@@ -39,7 +39,8 @@
       "kinds": {
         "key": "Key",
         "card": "Card",
-        "fob": "Fob"
+        "fob": "Fob",
+        "code": "Code"
       },
       "actions": {
         "issue": "Handed out",
@@ -47,7 +48,18 @@
         "lost": "Lost",
         "found": "Found",
         "retire": "Retired"
-      }
+      },
+      "panel": "Key",
+      "history": "Handovers",
+      "code": "Code",
+      "codeKeep": "Leave empty to keep the code",
+      "access": "Who may use it",
+      "public": "Every member (public)",
+      "publicShort": "Every member",
+      "assignMembers": "Members …",
+      "assignGroups": "Groups …",
+      "nobodyAssigned": "Nobody assigned",
+      "showCode": "Show"
     },
     "shell": {
       "nav": {
@@ -58,7 +70,9 @@
     },
     "account": {
       "myKeys": "My keys",
-      "keyDeposit": "Deposit CHF {{amount}}"
+      "keyDeposit": "Deposit CHF {{amount}}",
+      "myKeysCodes": "My keys and codes",
+      "showCode": "Show code"
     },
     "card": {
       "title": "Member card",
@@ -171,8 +185,9 @@
       },
       "kinds": {
         "key": "Schlüssel",
-        "card": "Charte",
-        "fob": "Badge"
+        "card": "Karte",
+        "fob": "Badge",
+        "code": "Code"
       },
       "actions": {
         "issue": "Usgäh",
@@ -180,7 +195,18 @@
         "lost": "Verlore",
         "found": "Gfunde",
         "retire": "Usgmuschteret"
-      }
+      },
+      "panel": "Schlüssel",
+      "history": "Übergaben",
+      "code": "Code",
+      "codeKeep": "Leer lassen, um den Code zu behalten",
+      "access": "Wer darf ihn nutzen",
+      "public": "Alle Mitglieder (öffentlich)",
+      "publicShort": "Alle Mitglieder",
+      "assignMembers": "Mitglieder …",
+      "assignGroups": "Gruppen …",
+      "nobodyAssigned": "Niemand zugewiesen",
+      "showCode": "Anzeigen"
     },
     "shell": {
       "nav": {
@@ -191,7 +217,9 @@
     },
     "account": {
       "myKeys": "Mini Schlüssel",
-      "keyDeposit": "Depot CHF {{amount}}"
+      "keyDeposit": "Depot CHF {{amount}}",
+      "myKeysCodes": "Meine Schlüssel und Codes",
+      "showCode": "Code anzeigen"
     },
     "card": {
       "title": "Mitgliederausweis",
