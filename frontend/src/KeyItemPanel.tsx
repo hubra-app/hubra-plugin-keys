@@ -3,12 +3,13 @@ import { Button, Group, SimpleGrid } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PanelField, PanelSection, useAuth, useT, useToast } from '@hubra/plugin-sdk'
 import { getKeyByItem, keyAction, type ClubKey, type KeyAction } from './api'
-import { IssueModal, KeyFormModal, KeyHistory, STATUS_COLORS } from './KeyModals'
+import { IssueModal, KeyFormModal, STATUS_COLORS } from './KeyModals'
 
 /**
  * On the inventory page of an item of the type "Key": what only a key has
- * (number, kind, what it opens, deposit), who holds it, the handover
- * buttons and the history. Shows nothing for any other item.
+ * (kind, what it opens, deposit), who holds it and the handover buttons.
+ * The handovers are in the item's history in Inventory. Shows nothing for
+ * any other item.
  */
 export function KeyItemPanel({ itemId }: { itemId: number }) {
   const { t } = useT()
@@ -110,9 +111,6 @@ export function KeyItemPanel({ itemId }: { itemId: number }) {
             )}
           </Group>
         )}
-      </PanelSection>
-      <PanelSection label={t('keys.history', 'Handovers')}>
-        <KeyHistory history={key.history ?? []} />
       </PanelSection>
 
       {editing && (

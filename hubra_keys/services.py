@@ -13,12 +13,14 @@ from hubra.core.extensions import db
 from hubra.core.models.member import Member
 
 from . import items
-from .models import KEY_KINDS, KEY_STATUSES, Key, KeyHandover
+from .models import KEY_KINDS, KEY_STATUSES, Key
 
 _EDITABLE = ("label", "number", "kind", "opens", "deposit_chf", "code_id", "notes")
 
 
 def key_to_dict(key: Key, with_history: bool = False) -> dict:
+    """A key as the app sees it. Its history is the item's in Inventory
+    (``with_history`` is kept for older callers and adds nothing)."""
     data = {
         "id": key.id,
         "label": key.label,
@@ -34,19 +36,6 @@ def key_to_dict(key: Key, with_history: bool = False) -> dict:
         "notes": key.notes,
         "updatedAt": key.updated_at.isoformat() if key.updated_at else None,
     }
-    if with_history:
-        data["history"] = [
-            {
-                "id": h.id,
-                "action": h.action,
-                "memberId": h.member_id,
-                "memberName": h.member.name if h.member else None,
-                "byName": h.by.name if h.by else None,
-                "note": h.note,
-                "at": h.at.isoformat(),
-            }
-            for h in key.handovers
-        ]
     return data
 
 
@@ -155,15 +144,8 @@ class KeyService:
 
     @staticmethod
     def _log(key: Key, action: str, member_id, actor_id, note) -> None:
-        db.session.add(
-            KeyHandover(
-                key_id=key.id,
-                action=action,
-                member_id=member_id,
-                by_id=actor_id,
-                note=note,
-            )
-        )
+        """Into the history of the key's item in Inventory."""
+        items.record(key, action, member_id, actor_id, note)
 
     @staticmethod
     def issue(key_id: int, member_id: int, actor_id: int | None, note=None) -> Key:

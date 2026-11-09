@@ -8,7 +8,7 @@ import pytest
 from hubra.core import contracts
 from hubra.core.models.member import Member
 from hubra_keys.items import link_missing
-from hubra_keys.models import Key
+from hubra_keys.models import Key, KeyHandover
 
 
 def _item(item_id: int) -> dict | None:
@@ -48,8 +48,10 @@ def test_handovers_set_the_item_status(client, auth_headers, holder):
     item_id = key["itemId"]
     client.post(f"/api/v1/keys/{key['id']}/issue", json={"member_id": holder.id})
     assert _item(item_id)["status"] == "in_use"
+    assert _item(item_id)["holder_id"] == holder.id
     client.post(f"/api/v1/keys/{key['id']}/return")
     assert _item(item_id)["status"] == "available"
+    assert _item(item_id)["holder_id"] is None
     client.post(f"/api/v1/keys/{key['id']}/lost")
     assert _item(item_id)["status"] == "lost"
     client.post(f"/api/v1/keys/{key['id']}/found")
@@ -121,13 +123,28 @@ def test_no_longer_a_key(client, auth_headers, db, holder):
     assert _item(held["itemId"])["category"] == "Key"
 
 
-def test_keys_from_before_get_their_item(app, db, seeded_db):
-    old = [Key(label="Old 1", number="O-1"), Key(label="Old 2", status="lost")]
+def test_keys_from_before_get_their_item(client, auth_headers, db, seeded_db, holder):
+    from datetime import datetime, timezone
+
+    old = [
+        Key(label="Old 1", number="O-1", status="issued", holder_id=holder.id),
+        Key(label="Old 2", status="lost"),
+    ]
     db.session.add_all(old)
+    db.session.flush()
+    then = datetime(2025, 3, 1, 10, 0, tzinfo=timezone.utc)
+    db.session.add(KeyHandover(key_id=old[0].id, action="issue", member_id=holder.id,
+                               note="from before", at=then))
     db.session.commit()
     assert link_missing() == 2
     db.session.commit()
     first, second = (_item(k.item_id) for k in old)
     assert first["name"] == "Old 1" and first["category"] == "Key"
+    assert first["status"] == "in_use" and first["holder_id"] == holder.id
     assert second["status"] == "lost"
+    # The old handover moved into the item's history, with its date.
+    history = client.get(f"/api/v1/inventory/{old[0].item_id}/history").get_json()
+    assert [(h["action"], h["note"]) for h in history] == [("issue", "from before")]
+    assert history[0]["at"].startswith("2025-03-01")
+    assert db.session.query(KeyHandover).count() == 0
     assert link_missing() == 0

@@ -120,7 +120,10 @@ def test_issue_and_return_key_logs_history(client, auth_headers, key, other_memb
     resp = client.post(f"/api/v1/keys/{key.id}/return", json={"note": "ok"})
     body = resp.get_json()
     assert body["status"] == "available" and body["holderId"] is None
-    assert [h["action"] for h in body["history"]] == ["return", "issue"]
+    # The handovers are the history of the key's item in Inventory.
+    history = client.get(f"/api/v1/inventory/{body['itemId']}/history").get_json()
+    assert [h["action"] for h in history] == ["return", "issue"]
+    assert history[0]["note"] == "ok" and history[1]["member_name"] == "Hanna Holder"
 
 
 def test_lost_and_found(client, auth_headers, key):

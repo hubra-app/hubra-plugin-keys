@@ -7,7 +7,6 @@ import {
   issueKey,
   updateKey,
   type ClubKey,
-  type KeyHandover,
   type KeyInput,
   type KeyKind,
   type KeyStatus,
@@ -217,32 +216,3 @@ export function IssueModal({
   )
 }
 
-/** A key's handovers, newest first. */
-export function KeyHistory({ history }: { history: KeyHandover[] }) {
-  const { t } = useT()
-  if (history.length === 0) {
-    return <p style={{ color: '#99a2ac' }}>{t('keys.noHistory', 'No handovers yet.')}</p>
-  }
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {history.map((h) => (
-        <div
-          key={h.id}
-          style={{
-            padding: '8px 0',
-            borderBottom: '1px solid var(--hb-border)',
-            fontSize: 'var(--mantine-font-size-sm)',
-          }}
-        >
-          <strong>{t(`keys.actions.${h.action}`, h.action)}</strong>
-          {h.memberName && <> · {h.memberName}</>}
-          <div style={{ color: 'var(--hb-text-3)', fontSize: 'var(--mantine-font-size-xs)' }}>
-            {new Date(h.at).toLocaleString()}
-            {h.byName && <> · {h.byName}</>}
-            {h.note && <> · {h.note}</>}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}

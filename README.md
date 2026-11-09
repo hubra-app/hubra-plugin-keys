@@ -8,13 +8,13 @@ A plugin for [Hubra](https://hubra.club). Physical keys, cards and fobs: who hol
 
 ## Keys in the inventory
 
-Each key, card or fob is an inventory item of the type **Key**, so it shows
-in Inventory with the club's other items. Its page there shows who holds it,
-its number, what it opens and the deposit, with buttons to hand it out, take
-it back, mark it lost or found and retire it, and its history. Adding an
-item of the type Key in Inventory makes the key too. The Keys page lists all
-keys with their holders. Keys talks to Inventory through its contracts only,
-never its code or tables.
+Keys have no page of their own: each key, card or fob is an inventory item of
+the type **Key**. Add one in Inventory with the type Key; filter the list by
+Key (the table then shows number, status and who holds each key) or use the
+"By type" view. The key's inventory page has the key panel (kind, what it
+opens, deposit, hand out, take back, lost, found, retire); the handovers are
+in the item's history there. Keys talks to Inventory through its contracts
+only, never its code or tables.
 
 ## Member cards and check-in
 

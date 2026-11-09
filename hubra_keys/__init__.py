@@ -25,13 +25,6 @@ module = Module(
     ),
     nav=(
         NavItem(
-            "/app/inventory/keys",
-            "shell.nav.keys",
-            "key",
-            order=31,
-            perms=("keys.keys.read",),
-        ),
-        NavItem(
             "/app/inventory/checkin",
             "shell.nav.checkin",
             "qrcode",
@@ -69,6 +62,7 @@ module = Module(
         "inventory.items.get": ">=1,<2",
         "inventory.items.save": ">=1,<2",
         "inventory.items.delete": ">=1,<2",
+        "inventory.items.history.add": ">=1,<2",
         "inventory.item.saved": ">=1,<2",
         "inventory.item.deleted": ">=1,<2",
     },

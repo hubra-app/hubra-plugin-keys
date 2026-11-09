@@ -1,22 +1,27 @@
 import { registerPlugin } from '@hubra/plugin-sdk'
+import { Navigate } from 'react-router-dom'
 import { IconQrcode } from '@tabler/icons-react'
 import { CheckInScreen } from './CheckInScreen'
 import { KeyItemPanel } from './KeyItemPanel'
-import { KeysScreen } from './KeysScreen'
 import { LocksScreen } from './LocksScreen'
 import { MemberCardCard } from './MemberCardCard'
 import { MyDoorsCard } from './MyDoorsCard'
 import { MyKeysCard } from './MyKeysCard'
 import translations from './translations.json'
 
+function KeysMoved() {
+  return <Navigate to="/app/inventory?type=Key" replace />
+}
+
 registerPlugin({
   id: 'keys',
   routes: [
+    // Keys have no page of their own any more: they are inventory items of
+    // the type "Key". Old links land on the inventory's key view.
     {
       path: 'inventory/keys',
       module: 'inventory.keys',
-      perm: 'keys.keys.read',
-      component: KeysScreen,
+      component: KeysMoved,
     },
     {
       path: 'inventory/checkin',

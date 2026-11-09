@@ -11,8 +11,12 @@ stay in line through Inventory's contracts, never its code or tables:
   (``on_item_saved``): a new "Key" item gets its key here, a renamed one
   renames the key, and a status set by hand there is set back to the key's;
 - a key item deleted in Inventory deletes the key (``on_item_deleted``);
-- keys from before (and any whose item couldn't be made) get their item
-  from the job ``keys-link-items`` (``link_missing``).
+- a handover goes into the item's history in Inventory
+  (``inventory.items.history.add``, ``record``), and who holds the key is
+  the item's holder;
+- keys from before (and any whose item couldn't be made) get their item,
+  and their old handovers move into its history, from the job
+  ``keys-link-items`` (``link_missing``).
 """
 
 from __future__ import annotations
@@ -25,7 +29,7 @@ from hubra.core.contracts import SYSTEM, ActionUnavailable, Refused, call, query
 from hubra.core.extensions import db
 from hubra.core.utils import log_audit
 
-from .models import Key
+from .models import Key, KeyHandover
 
 log = logging.getLogger(__name__)
 
@@ -49,6 +53,7 @@ def _fields(key: Key) -> dict:
         "category": TYPE,
         "status": STATUS_TO_ITEM.get(key.status, "available"),
         "serial_number": key.number,
+        "holder_id": key.holder_id if key.status == "issued" else None,
     }
 
 
@@ -77,6 +82,53 @@ def push(key: Key, actor_id: int | None = None) -> None:
         return
     key.item_id = item["id"]
     db.session.flush()
+    move_history(key)
+
+
+def record(key: Key, action: str, member_id, actor_id, note=None) -> None:
+    """A handover, into the history of the key's item in Inventory. Kept
+    here only while the key has no item yet; the job moves it later."""
+    if key.item_id is None:
+        push(key, actor_id)
+    if key.item_id is None:
+        db.session.add(
+            KeyHandover(
+                key_id=key.id, action=action, member_id=member_id, by_id=actor_id, note=note
+            )
+        )
+        return
+    call(
+        "inventory.items.history.add",
+        item_id=key.item_id,
+        action=action,
+        member_id=member_id,
+        by_id=actor_id,
+        note=note,
+        actor=SYSTEM,
+    )
+
+
+def move_history(key: Key) -> int:
+    """Move the key's handovers kept here into its item's history."""
+    if key.item_id is None:
+        return 0
+    rows = db.session.scalars(
+        select(KeyHandover).where(KeyHandover.key_id == key.id).order_by(KeyHandover.at)
+    ).all()
+    for h in rows:
+        call(
+            "inventory.items.history.add",
+            item_id=key.item_id,
+            action=h.action,
+            member_id=h.member_id,
+            by_id=h.by_id,
+            note=h.note,
+            at=h.at.isoformat(),
+            actor=SYSTEM,
+        )
+        db.session.delete(h)
+    db.session.flush()
+    return len(rows)
 
 
 def remove(key: Key, actor_id: int | None = None) -> None:
@@ -92,7 +144,8 @@ def remove(key: Key, actor_id: int | None = None) -> None:
 
 
 def link_missing(limit: int = 200) -> int:
-    """Give keys without an inventory item one. Returns how many got one."""
+    """Give keys without an inventory item one, and move handovers still
+    kept here into the item's history. Returns how many keys got an item."""
     keys = db.session.scalars(
         select(Key).where(Key.item_id.is_(None)).order_by(Key.id).limit(limit)
     ).all()
@@ -101,6 +154,14 @@ def link_missing(limit: int = 200) -> int:
         push(key)
         if key.item_id is not None:
             done += 1
+    leftover = db.session.scalars(
+        select(Key)
+        .where(Key.item_id.is_not(None))
+        .where(Key.id.in_(select(KeyHandover.key_id)))
+        .limit(limit)
+    ).all()
+    for key in leftover:
+        move_history(key)
     return done
 
 
@@ -158,9 +219,11 @@ def on_item_saved(tenant_id=None, item_id: int = 0, **_) -> None:
     db.session.flush()
     # The key says what its status is: put a status set by hand back, and a
     # number that is taken by another key.
-    if item["status"] != STATUS_TO_ITEM.get(key.status) or (
-        item.get("serial_number") or None
-    ) != key.number:
+    if (
+        item["status"] != STATUS_TO_ITEM.get(key.status)
+        or (item.get("serial_number") or None) != key.number
+        or item.get("holder_id") != _fields(key)["holder_id"]
+    ):
         push(key)
 
 
