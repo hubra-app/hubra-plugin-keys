@@ -24,6 +24,8 @@ export interface ClubKey {
   holderName: string | null
   depositChf: string | null
   codeId: number | null
+  /** The key's item in Inventory (type "Key"). */
+  itemId: number | null
   notes: string | null
   updatedAt: string | null
   history?: KeyHandover[]
@@ -41,6 +43,8 @@ export interface KeyInput {
 export const listKeys = () => apiFetch<ClubKey[]>('/keys/')
 export const listMyKeys = () => apiFetch<ClubKey[]>('/keys/mine')
 export const getKey = (id: number) => apiFetch<ClubKey>(`/keys/${id}`)
+/** The key behind an inventory item; 404 for an item that is no key. */
+export const getKeyByItem = (itemId: number) => apiFetch<ClubKey>(`/keys/by-item/${itemId}`)
 
 export const createKey = (input: KeyInput) =>
   apiFetch<ClubKey>('/keys/', { method: 'POST', body: JSON.stringify(input) })

@@ -12,6 +12,7 @@ from hubra.core.errors import raise_error
 from hubra.core.extensions import db
 from hubra.core.models.member import Member
 
+from . import items
 from .models import KEY_KINDS, KEY_STATUSES, Key, KeyHandover
 
 _EDITABLE = ("label", "number", "kind", "opens", "deposit_chf", "code_id", "notes")
@@ -29,6 +30,7 @@ def key_to_dict(key: Key, with_history: bool = False) -> dict:
         "holderName": key.holder.name if key.holder else None,
         "depositChf": str(key.deposit_chf) if key.deposit_chf is not None else None,
         "codeId": key.code_id,
+        "itemId": key.item_id,
         "notes": key.notes,
         "updatedAt": key.updated_at.isoformat() if key.updated_at else None,
     }
@@ -123,6 +125,7 @@ class KeyService:
         db.session.add(key)
         db.session.flush()
         log_audit(actor_id, "create_key", "Key", key.id, key.label)
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -135,6 +138,7 @@ class KeyService:
             setattr(key, field, value)
         db.session.flush()
         log_audit(actor_id, "update_key", "Key", key.id, key.label)
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -143,6 +147,7 @@ class KeyService:
         if key.status == "issued":
             raise_error(409, "CONFLICT", "Take the key back before deleting it")
         log_audit(actor_id, "delete_key", "Key", key.id, key.label)
+        items.remove(key, actor_id)
         db.session.delete(key)
         db.session.flush()
 
@@ -173,6 +178,7 @@ class KeyService:
         KeyService._log(key, "issue", member_id, actor_id, note)
         log_audit(actor_id, "issue_key", "Key", key.id, f"{key.label} → {member.name}")
         db.session.flush()
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -185,6 +191,7 @@ class KeyService:
         key.status = "available"
         key.holder_id = None
         db.session.flush()
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -196,6 +203,7 @@ class KeyService:
         log_audit(actor_id, "lose_key", "Key", key.id, key.label)
         key.status = "lost"
         db.session.flush()
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -208,6 +216,7 @@ class KeyService:
         key.status = "available"
         key.holder_id = None
         db.session.flush()
+        items.push(key, actor_id)
         return key
 
     @staticmethod
@@ -218,4 +227,5 @@ class KeyService:
         KeyService._log(key, "retire", None, actor_id, note)
         key.status = "retired"
         db.session.flush()
+        items.push(key, actor_id)
         return key

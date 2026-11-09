@@ -36,6 +36,12 @@ class Key(db.Model):
     # A door code from the codes plugin, if that is installed. No foreign
     # key: Keys works without Codes; the id is checked when it is set.
     code_id: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
+    # The key's item in Inventory (type "Key"). No foreign key: Inventory's
+    # table is Inventory's; the item is kept in line through its contracts
+    # (hubra_keys.items). Empty until the job keys-link-items made it.
+    item_id: Mapped[int | None] = mapped_column(
+        db.Integer, nullable=True, unique=True, index=True
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

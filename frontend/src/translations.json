@@ -47,7 +47,9 @@
         "lost": "Lost",
         "found": "Found",
         "retire": "Retired"
-      }
+      },
+      "panel": "Key",
+      "history": "Handovers"
     },
     "shell": {
       "nav": {
@@ -180,7 +182,9 @@
         "lost": "Verlore",
         "found": "Gfunde",
         "retire": "Usgmuschteret"
-      }
+      },
+      "panel": "Schlüssel",
+      "history": "Übergaben"
     },
     "shell": {
       "nav": {

@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.4.0
+
+- Keys are an inventory type: each key is an item of the type "Key" in
+  Inventory, so it shows in the inventory list, its filters and search with
+  the club's other items. Its page there has a key panel: status, holder,
+  kind, number, what it opens, deposit, the handover buttons (hand out, take
+  back, lost, found, retire) and the history. The Keys page stays as the
+  overview of who holds which key; a row opens the key's inventory page.
+- Both ways: a key added, renamed or deleted here changes its item, and an
+  item of the type "Key" added, renamed or deleted in Inventory changes the
+  key. Keys owns the status (handed out = "in use" in Inventory); a status
+  set by hand in Inventory is put back. An item that stops being a key
+  deletes the key, unless somebody holds it.
+- Existing keys get their inventory item from the new job `keys-link-items`
+  (every 5 minutes) after the upgrade; nothing is lost. New column
+  `keys.item_id` (`flask db upgrade` / plugin migrations).
+- Goes through Inventory's contracts only (`inventory.items.save`,
+  `inventory.items.delete`, `inventory.items.get`, events
+  `inventory.item.saved` and `inventory.item.deleted`): needs Inventory
+  2.2 or newer.
+
 ## 1.3.0
 
 - Member cards: every member has a QR code on their account page. A new code

@@ -1,6 +1,6 @@
 id: keys
 name: Keys
-version: "1.3.0"
+version: "1.4.0"
 hubra: ">=0.2,<1"
 description: "Physical keys, cards and fobs: who holds which, with a handover log. Member cards with a QR code to check members in at trainings, events and the door. Nuki smart locks whose keypad codes follow membership."
 author: Hubra
@@ -10,8 +10,8 @@ package: hubra_keys
 modules: [inventory.keys]
 requires: [inventory]
 depends:
-  inventory: ">=2.0,<3"
+  inventory: ">=2.2,<3"
 migrations: migrations
 frontend: frontend/dist/plugin.js
 # What this plugin extends (Hubra docs/plugins.md).
-uses: [routes, events, tables, settings, jobs, nav, frontend]
+uses: [routes, events, tables, settings, jobs, nav, frontend, contracts]

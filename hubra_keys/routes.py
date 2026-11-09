@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from flask import Blueprint, jsonify, request
+from sqlalchemy import select
 
 from hubra.core.auth.helpers import get_current_member
 from hubra.core.permissions import permission_required, require_member
 from hubra.core.errors import api_error
 from hubra.core.extensions import db
 
+from .models import Key
 from .services import KeyService, key_to_dict
 
 keys_bp = Blueprint("keys_bp", __name__)
@@ -54,6 +56,16 @@ def my_keys():
 @permission_required("keys", "read", "View keys")
 def get_key(key_id: int):
     return jsonify(key_to_dict(KeyService.get(key_id), with_history=True)), 200
+
+
+@keys_bp.get("/by-item/<int:item_id>")
+@permission_required("keys", "read", "View keys")
+def get_key_by_item(item_id: int):
+    """The key behind an inventory item, for the key panel on its page."""
+    key = db.session.scalar(select(Key).where(Key.item_id == item_id))
+    if key is None:
+        return api_error("NOT_FOUND", f"No key for inventory item {item_id}", 404)
+    return jsonify(key_to_dict(key, with_history=True)), 200
 
 
 @keys_bp.post("/")

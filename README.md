@@ -4,7 +4,17 @@
 
 A plugin for [Hubra](https://hubra.club). Physical keys, cards and fobs: who holds which, with a handover log. Members see their keys on their account page.
 
-**Version** 1.3.0 · **Works with** Hubra >=0.2,<1 · **Plugin id** `keys`
+**Version** 1.4.0 · **Works with** Hubra >=0.2,<1 · **Plugin id** `keys`
+
+## Keys in the inventory
+
+Each key, card or fob is an inventory item of the type **Key**, so it shows
+in Inventory with the club's other items. Its page there shows who holds it,
+its number, what it opens and the deposit, with buttons to hand it out, take
+it back, mark it lost or found and retire it, and its history. Adding an
+item of the type Key in Inventory makes the key too. The Keys page lists all
+keys with their holders. Keys talks to Inventory through its contracts only,
+never its code or tables.
 
 ## Member cards and check-in
 

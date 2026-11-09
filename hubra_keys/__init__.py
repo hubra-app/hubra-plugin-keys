@@ -1,4 +1,5 @@
 """Keys: physical keys, cards and fobs, who holds them, and every handover.
+Each key is an inventory item of the type "Key" (hubra_keys.items).
 Also the member card in the app, checking members in with it, and Nuki
 smart locks whose keypad codes follow membership."""
 
@@ -54,8 +55,23 @@ module = Module(
         ),
     ),
     tasks=("hubra_keys.tasks",),
-    schedule=(Schedule("keys-sync-locks", "hubra_keys.tasks.sync_locks", 900.0),),
-    events={INVOICE_OVERDUE: "hubra_keys.hooks:on_invoice_overdue"},
+    schedule=(
+        Schedule("keys-sync-locks", "hubra_keys.tasks.sync_locks", 900.0),
+        Schedule("keys-link-items", "hubra_keys.tasks.link_items", 300.0),
+    ),
+    events={
+        INVOICE_OVERDUE: "hubra_keys.hooks:on_invoice_overdue",
+        "inventory.item.saved": "hubra_keys.items:on_item_saved",
+        "inventory.item.deleted": "hubra_keys.items:on_item_deleted",
+    },
+    # Each key is an inventory item of the type "Key" (hubra_keys.items).
+    consumes={
+        "inventory.items.get": ">=1,<2",
+        "inventory.items.save": ">=1,<2",
+        "inventory.items.delete": ">=1,<2",
+        "inventory.item.saved": ">=1,<2",
+        "inventory.item.deleted": ">=1,<2",
+    },
     tables=(
         "keys",
         "key_handovers",
