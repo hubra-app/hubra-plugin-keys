@@ -46,7 +46,7 @@ export function MyKeysCard() {
               </Text>
             )}
           </div>
-          {k.kind === 'code' && k.code ? (
+          {k.code ? (
             <CodeValue code={k.code} />
           ) : k.depositChf && k.mine ? (
             <Text fz="xs" c="dimmed" className="num">

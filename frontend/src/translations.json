@@ -66,7 +66,11 @@
         "count": "How many",
         "issued": "Keys handed out",
         "issuedHint": "How many keys are handed out, and how many are lost"
-      }
+      },
+      "codeOptional": "Code (optional)",
+      "codeHint": "For example the key safe or the combination of the lock",
+      "codeRemove": "Remove code",
+      "codeRemoved": "The code is removed when you save"
     },
     "shell": {
       "nav": {
@@ -211,7 +215,11 @@
         "count": "Wie viele",
         "issued": "Ausgegebene Schlüssel",
         "issuedHint": "Wie viele Schlüssel ausgegeben und wie viele verloren sind"
-      }
+      },
+      "codeOptional": "Code (optional)",
+      "codeHint": "Zum Beispiel der Schlüsseltresor oder die Kombination des Schlosses",
+      "codeRemove": "Code entfernen",
+      "codeRemoved": "Der Code wird beim Speichern entfernt"
     },
     "shell": {
       "nav": {

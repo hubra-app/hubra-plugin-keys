@@ -85,7 +85,8 @@ export function KeyItemPanel({ itemId }: { itemId: number }) {
           <PanelField label={t('keys.statusLabel', 'Status')}>
             <span style={{ color: STATUS_COLORS[key.status], fontWeight: 600 }}>{statusLabel}</span>
           </PanelField>
-          {isCode ? (
+          {!isCode && <PanelField label={t('keys.holder', 'Holder')}>{key.holderName ?? '—'}</PanelField>}
+          {(isCode || key.hasCode) && (
             <PanelField label={t('keys.code', 'Code')}>
               {shown !== null ? (
                 <span className="num">{shown || '—'}</span>
@@ -97,8 +98,6 @@ export function KeyItemPanel({ itemId }: { itemId: number }) {
                 '—'
               )}
             </PanelField>
-          ) : (
-            <PanelField label={t('keys.holder', 'Holder')}>{key.holderName ?? '—'}</PanelField>
           )}
           <PanelField label={t('keys.kind', 'Type')}>{t(`keys.kinds.${key.kind}`, key.kind)}</PanelField>
           <PanelField label={t('keys.number', 'Number')}>

@@ -101,7 +101,8 @@ def _replace(key: Key, field: str, ids: list[int]) -> None:
 
 
 def _apply_extras(key: Key, data: dict) -> None:
-    """The code of a code key, and who the key is assigned to."""
+    """The code (of a code key, or one that goes with a key), and who the
+    key is assigned to."""
     from hubra.core.crypto import encrypt_code
     from hubra.core.models.group import Group
 
@@ -127,7 +128,7 @@ def _apply_extras(key: Key, data: dict) -> None:
 
 
 def plain_code(key: Key) -> str | None:
-    """The code of a code key in clear text; "" when it no longer opens."""
+    """The key's code in clear text; "" when it no longer opens."""
     from cryptography.fernet import InvalidToken
 
     from hubra.core.crypto import decrypt_code
