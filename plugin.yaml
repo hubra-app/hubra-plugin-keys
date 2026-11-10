@@ -2,7 +2,7 @@ id: keys
 name: Keys
 version: "1.5.0"
 hubra: ">=0.2.5,<1"
-description: "Physical keys, cards and fobs: who holds which, with a handover log. Member cards with a QR code to check members in at trainings, events and the door. Nuki smart locks whose keypad codes follow membership."
+description: "Physical keys, cards and fobs: who holds which, with a handover log. Check members in at trainings, events and the door by scanning their member badge. Nuki smart locks whose keypad codes follow membership."
 author: Hubra
 homepage: https://github.com/hubra-app/hubra-plugin-keys
 tags: [inventory]

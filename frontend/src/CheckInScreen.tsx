@@ -191,7 +191,7 @@ function Who({ member, line }: { member: CardMember; line?: string }) {
       <div>
         <Text fw={700}>{line ?? member.name}</Text>
         <Text fz="sm" c={member.blocked || member.expired ? 'red' : 'dimmed'}>
-          {member.blocked ?? (member.expired ? t('checkin.expired') : t(`card.status.${member.status}`, member.status))}
+          {member.blocked ?? (member.expired ? t('checkin.expired') : t(`checkin.status.${member.status}`, member.status))}
         </Text>
       </div>
     </Group>

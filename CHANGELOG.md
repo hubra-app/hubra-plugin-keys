@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Check-in scans the member badge**: the one badge per person from My Account and Google Wallet (`HB-XXXX-XXXX`), through Hubra's `members.badge.lookup` contract; the number can also be typed. The club's own member card is gone from the account page (and `GET /keys/card`, `POST /keys/card/renew` with it), so members have one QR code instead of two. Cards members already have (printed, screenshots) still check in; a later release drops `member_cards`. Needs Hubra with `members.badge.lookup` (the release after 0.2.5).
 - Dashboard widgets: **Meine Schlüssel** (keys and codes the member holds or may use, without the code itself) and **Ausgegebene Schlüssel** (how many are handed out and how many are lost; needs `keys.keys.read`).
 
 ## 1.5.0
