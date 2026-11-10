@@ -71,6 +71,7 @@ export function KeyFormModal({
   )
   // A new code is typed in; an existing one is kept unless replaced.
   const [code, setCode] = useState('')
+  const [clearCode, setClearCode] = useState(false)
   const { data: members } = useQuery({
     queryKey: ['members'],
     queryFn: () => listMembers({ pageSize: 500 }),
@@ -83,7 +84,7 @@ export function KeyFormModal({
       number: form.number || null,
       opens: form.opens || null,
       notes: form.notes || null,
-      ...(form.kind === 'code' && code ? { code } : {}),
+      ...(code ? { code } : clearCode ? { code: '' } : {}),
     }
     setBusy(true)
     try {
@@ -137,20 +138,33 @@ export function KeyFormModal({
             allowDeselect={false}
           />
         </Field>
-        {form.kind === 'code' && (
-          <Field label={t('keys.code', 'Code')}>
-            <PasswordInput
-              value={code}
-              onChange={(e) => setCode(e.currentTarget.value)}
-              placeholder={
-                clubKey !== 'new' && clubKey.hasCode
-                  ? t('keys.codeKeep', 'Leave empty to keep the code')
-                  : '1234'
-              }
-              autoComplete="off"
-            />
-          </Field>
-        )}
+        {/* A code key is its code; any other key may carry one too (a key
+            safe, the lock's combination). Stored encrypted. */}
+        <Field
+          label={form.kind === 'code' ? t('keys.code', 'Code') : t('keys.codeOptional', 'Code (optional)')}
+          hint={form.kind === 'code' ? undefined : t('keys.codeHint', 'For example the key safe or the combination of the lock')}
+        >
+          <PasswordInput
+            value={code}
+            onChange={(e) => {
+              setCode(e.currentTarget.value)
+              setClearCode(false)
+            }}
+            placeholder={
+              clubKey !== 'new' && clubKey.hasCode
+                ? clearCode
+                  ? t('keys.codeRemoved', 'The code is removed when you save')
+                  : t('keys.codeKeep', 'Leave empty to keep the code')
+                : '1234'
+            }
+            autoComplete="off"
+          />
+          {clubKey !== 'new' && clubKey.hasCode && !code && !clearCode && form.kind !== 'code' && (
+            <Button size="compact-xs" variant="subtle" color="red" mt={4} onClick={() => setClearCode(true)}>
+              {t('keys.codeRemove', 'Remove code')}
+            </Button>
+          )}
+        </Field>
         <Field label={t('keys.access', 'Who may use it')}>
           <Checkbox
             checked={!!form.public}

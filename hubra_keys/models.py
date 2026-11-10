@@ -47,7 +47,8 @@ class Key(db.Model):
         db.Integer, nullable=True, unique=True, index=True
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # The code of a key of the kind "code", encrypted (purpose keys.secret).
+    # The code of a key of the kind "code", or a code that goes with a key
+    # (key safe, combination), encrypted (purpose keys.secret).
     secret: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Who may use it: every member (public), or the members and groups in
     # ``assignments``. Who has a physical key right now is ``holder_id``.

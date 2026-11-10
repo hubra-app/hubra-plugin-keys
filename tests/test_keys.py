@@ -127,6 +127,22 @@ def test_my_keys(client, db, auth_headers, key, seeded_db):
     assert client.get("/api/v1/keys/mine").get_json() == []
 
 
+def test_key_with_a_code(client, db, auth_headers, key, seeded_db):
+    """A physical key can carry a code (key safe); its holder sees it."""
+    resp = client.patch(f"/api/v1/keys/{key.id}", json={"code": "4711"})
+    assert resp.status_code == 200 and resp.get_json()["hasCode"] is True
+    assert resp.get_json()["kind"] == "key"
+    key.status = "issued"
+    key.holder_id = seeded_db["admin"].id
+    db.session.commit()
+    mine = client.get("/api/v1/keys/mine").get_json()
+    assert mine[0]["code"] == "4711"
+    # "" removes it again.
+    resp = client.patch(f"/api/v1/keys/{key.id}", json={"code": ""})
+    assert resp.get_json()["hasCode"] is False
+    assert "code" not in client.get("/api/v1/keys/mine").get_json()[0]
+
+
 def test_keys_need_inventory(client, db, auth_headers):
     set_modules(False, "inventory")
     resp = client.get("/api/v1/keys/")

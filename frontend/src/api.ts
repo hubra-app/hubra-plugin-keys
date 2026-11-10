@@ -33,7 +33,7 @@ export interface ClubKey {
   /** Assigned to these members and groups (several of each). */
   members?: { id: number; name: string | null }[]
   groups?: { id: number; name: string | null }[]
-  /** Only in "my keys": the code of a code key, and whether I hold it. */
+  /** Only in "my keys": the code (code keys and keys with a code), and whether I hold it. */
   code?: string | null
   mine?: boolean
   notes: string | null
@@ -48,7 +48,7 @@ export interface KeyInput {
   opens?: string | null
   deposit_chf?: number | null
   notes?: string | null
-  /** A code key's code; "" clears it. Left out keeps it. */
+  /** The code (of a code key, or one that goes with a key); "" clears it. Left out keeps it. */
   code?: string
   public?: boolean
   member_ids?: number[]

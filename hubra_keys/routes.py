@@ -38,7 +38,7 @@ def list_keys():
 def my_keys():
     """Keys and codes the signed-in member holds, may use (public) or is
     assigned to (directly or through a group); no permission needed. A
-    code comes with the code itself."""
+    code, or a key with a code, comes with the code itself."""
     me = get_current_member()
     # The member's view: no manager notes, no import marker, no other people.
     hidden = ("notes", "codeId", "holderId", "holderName", "members", "groups", "itemId")
@@ -46,7 +46,9 @@ def my_keys():
     for key in keys_for(me):
         row = {k: v for k, v in key_to_dict(key).items() if k not in hidden}
         row["mine"] = key.holder_id == me.id
-        if key.kind == "code":
+        # A code key's code, or the code that goes with a key (a key safe,
+        # the lock's combination).
+        if key.secret:
             row["code"] = plain_code(key)
         out.append(row)
     return jsonify(out), 200
