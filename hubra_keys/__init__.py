@@ -3,6 +3,7 @@ Each key is an inventory item of the type "Key" (hubra_keys.items).
 Also the member card in the app, checking members in with it, and Nuki
 smart locks whose keypad codes follow membership."""
 
+from hubra.core.contracts import WidgetField, widget_contract
 from hubra.core.modules import Blueprint, Module, NavItem, Schedule, SettingField
 from hubra.core.modules.events import INVOICE_OVERDUE
 
@@ -84,5 +85,26 @@ module = Module(
         "checkins",
         "smart_locks",
         "lock_access",
+    ),
+    # Dashboard widgets (hubra_keys/widgets.py).
+    provides=(
+        widget_contract(
+            "inventory.keys.mine",
+            "hubra_keys.widgets:mine",
+            label="keys.widget.mine",
+            description="keys.widget.mineHint",
+            size="s",
+            view="list",
+            fields=(WidgetField("count", "keys.widget.count", "number", 5),),
+        ),
+        widget_contract(
+            "inventory.keys.issued",
+            "hubra_keys.widgets:issued",
+            label="keys.widget.issued",
+            description="keys.widget.issuedHint",
+            size="s",
+            view="stat",
+            perm="keys.keys.read",
+        ),
     ),
 )
