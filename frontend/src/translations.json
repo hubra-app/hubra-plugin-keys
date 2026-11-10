@@ -59,7 +59,14 @@
       "assignMembers": "Members …",
       "assignGroups": "Groups …",
       "nobodyAssigned": "Nobody assigned",
-      "showCode": "Show"
+      "showCode": "Show",
+      "widget": {
+        "mine": "My keys",
+        "mineHint": "Keys and codes you hold or may use (without the code itself)",
+        "count": "How many",
+        "issued": "Keys handed out",
+        "issuedHint": "How many keys are handed out, and how many are lost"
+      }
     },
     "shell": {
       "nav": {
@@ -206,7 +213,14 @@
       "assignMembers": "Mitglieder …",
       "assignGroups": "Gruppen …",
       "nobodyAssigned": "Niemand zugewiesen",
-      "showCode": "Anzeigen"
+      "showCode": "Anzeigen",
+      "widget": {
+        "mine": "Meine Schlüssel",
+        "mineHint": "Schlüssel und Codes, die du hast oder brauchen darfst (ohne den Code selbst)",
+        "count": "Wie viele",
+        "issued": "Ausgegebene Schlüssel",
+        "issuedHint": "Wie viele Schlüssel ausgegeben und wie viele verloren sind"
+      }
     },
     "shell": {
       "nav": {

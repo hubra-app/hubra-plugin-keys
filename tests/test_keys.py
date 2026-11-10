@@ -150,3 +150,30 @@ def test_overdue_invoice_notifies_key_managers(db, seeded_db, key, other_member)
         db.session.query(Notification).filter_by(member_id=seeded_db["admin"].id).all()
     )
     assert any("Front door" in n.msg for n in notes)
+
+
+# ── Dashboard widgets ───────────────────────────────────────────────────────
+
+
+def test_widgets(db, key, other_member):
+    from hubra.core import contracts
+
+    key.status, key.holder_id = "issued", other_member.id
+    db.session.add_all([
+        Key(label="Shared code", kind="code", public=True),
+        Key(label="Back door", number="B-2", status="lost"),
+        Key(label="Old", status="retired", public=True),
+    ])
+    db.session.commit()
+
+    mine = contracts.widget_data("inventory.keys.mine", {}, actor=other_member)
+    # Held first, then usable; retired keys and the codes themselves never.
+    assert [i["label"] for i in mine["items"]] == ["Front door", "Shared code"]
+    assert mine["items"][0]["sub"] == "A-1 · Main entrance"
+    assert "code" not in str(mine).lower().replace("shared code", "")
+
+    issued = contracts.widget_data("inventory.keys.issued", {}, actor=contracts.SYSTEM)
+    assert issued["value"] == 1 and issued["sub"] in ("1 verloren", "1 lost")
+
+    offered = [o.contract.name for o in contracts.widgets(actor=other_member)]
+    assert "inventory.keys.issued" not in offered
