@@ -63,6 +63,8 @@ module = Module(
     },
     # Each key is an inventory item of the type "Key" (hubra_keys.items).
     consumes={
+        # Check-in scans the member badge (Hubra core).
+        "members.badge.lookup": ">=1,<2",
         "inventory.items.get": ">=1,<2",
         "inventory.items.save": ">=1,<2",
         "inventory.items.delete": ">=1,<2",

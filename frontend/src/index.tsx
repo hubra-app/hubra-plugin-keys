@@ -4,7 +4,6 @@ import { IconQrcode } from '@tabler/icons-react'
 import { CheckInScreen } from './CheckInScreen'
 import { KeyItemPanel } from './KeyItemPanel'
 import { LocksScreen } from './LocksScreen'
-import { MemberCardCard } from './MemberCardCard'
 import { MyDoorsCard } from './MyDoorsCard'
 import { MyKeysCard } from './MyKeysCard'
 import translations from './translations.json'
@@ -45,7 +44,6 @@ registerPlugin({
       perm: 'keys.keys.read',
       component: KeyItemPanel,
     },
-    { slot: 'account.cards', module: 'inventory.keys', component: MemberCardCard },
     { slot: 'account.cards', module: 'inventory.keys', component: MyDoorsCard },
     { slot: 'account.cards', module: 'inventory.keys', component: MyKeysCard },
   ],

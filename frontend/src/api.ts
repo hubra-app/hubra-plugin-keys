@@ -90,18 +90,7 @@ export const keyAction = (id: number, action: KeyAction, note?: string) =>
     body: JSON.stringify({ note }),
   })
 
-// ── Member card and check-in ────────────────────────────────────────────────
-
-export interface MemberCard {
-  name: string
-  memberId: number
-  status: string
-  since: string | null
-  until: string | null
-  token: string
-  qr: string
-  renewedAt: string | null
-}
+// ── Check-in with the member badge ────────────────────────────────────────────────
 
 export interface CardMember {
   memberId: number
@@ -130,22 +119,13 @@ export interface TodayEvent {
   location: string | null
 }
 
-/** The app's check-in screen; the card's QR code points here. */
-export function checkinLink() {
-  const appRoot = window.location.origin + window.location.pathname.split('/app/')[0]
-  return `${appRoot}/app/inventory/checkin?card=`
-}
-
-/** The token from a scanned code: a whole link or just the token. */
+/** What to look up from a scanned code: a badge number, or an old club
+ * card (a link to the check-in screen with ?card=, or just its token). */
 export function cardToken(scanned: string) {
   const text = scanned.trim()
   const m = text.match(/[?&]card=([^&#\s]+)/)
   return m ? decodeURIComponent(m[1]) : text
 }
-
-const link = () => encodeURIComponent(checkinLink())
-export const getMyCard = () => apiFetch<MemberCard>(`/keys/card?link=${link()}`)
-export const renewMyCard = () => apiFetch<MemberCard>(`/keys/card/renew?link=${link()}`, { method: 'POST' })
 
 export const lookupCard = (card: string) =>
   apiFetch<CardMember>(`/keys/checkins/lookup?card=${encodeURIComponent(card)}`)
