@@ -22,23 +22,28 @@ groups; members find theirs under *My keys and codes* on their account page.
 Codes from the Codes plugin move in by themselves (Codes 2.1 or newer); then
 Codes can be uninstalled.
 
-## Member cards and check-in
+## Check-in with the member badge
 
-Every member has a member card on their account page: a QR code with a link
-to the club's check-in screen. Whoever has the right **Check members in with
-their member card** (`keys.checkins.create`) opens *Check-in* and scans:
+Every member has one member badge in Hubra: under *My Account* and, where the
+platform offers it, in Google Wallet. Its QR code holds the badge number (such
+as `HB-7K3M-Q9TX`), the same in every club. Whoever has the right **Check
+members in with their member badge** (`keys.checkins.create`) opens
+*Check-in* and scans:
 
-- with the phone camera: the link opens the check-in screen, shows who it is,
-  and one tap checks them in;
-- with a USB or Bluetooth QR scanner, which types the code into the field;
-- in Chrome on Android, with the camera button on the screen itself.
+- with a USB or Bluetooth QR scanner, which types the number into the field;
+- in Chrome on Android, with the camera button on the screen itself;
+- or types the badge number by hand (case, dashes and the `HB` don't matter).
 
 At an event of the day, a check-in marks the member present on the event's
 attendance list (an "excused" becomes "present"). Without an event it logs who
-came in and where (door, open workshop). The same card twice counts once.
+came in and where (door, open workshop). The same badge twice counts once.
 Suspended members and members who left are refused; an ended membership is
-shown in red. A member can make a new code, which ends the old one, including
-screenshots of it.
+shown in red. Someone with a badge who isn't a member of this club is not
+found.
+
+The club's own member cards from Keys 1.5 and older are no longer shown in
+the app. Codes members already have (printed cards, screenshots) still check
+in; a later release removes them.
 
 ## Smart locks (Nuki)
 

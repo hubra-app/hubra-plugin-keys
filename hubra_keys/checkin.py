@@ -1,14 +1,17 @@
-"""Member cards and check-in: /api/v1/keys/card and /api/v1/keys/checkins.
+"""Check-in with the member badge: /api/v1/keys/checkins.
 
-Every member has a card in the app: a QR code holding a link to the
-check-in screen with the card's secret token. Whoever checks people in
-(a trainer at training, someone at the door) scans it with the phone
-camera or a scanner; the check-in is kept, and at an event the member is
-marked present on the event's attendance roll.
+Every member has one member badge on My Account (and in Google Wallet): a
+badge number such as ``HB-7K3M-Q9TX`` with its QR code, the same in every
+club (Hubra core, ``members.badge.lookup``). Whoever checks people in (a
+trainer at training, someone at the door) scans it with a scanner or the
+check-in screen's camera; the check-in is kept, and at an event the member
+is marked present on the event's attendance roll.
 
-GET    /card                   my card (made on first use): token and QR code
-POST   /card/renew             a new token; the old code stops working
-GET    /checkins/lookup        ?card=<token>: who it is, before checking in
+The club's own member cards (``member_cards``) are gone from the app. Codes
+members already have (printed, screenshots) still check in until a later
+release drops the table.
+
+GET    /checkins/lookup        ?card=<badge number>: who it is, before checking in
 GET    /checkins/events        today's events to check people in to
 GET    /checkins               ?date=YYYY-MM-DD&eventId=<id>: that day's check-ins
 POST   /checkins               {card, eventId?, place?}
@@ -17,16 +20,15 @@ DELETE /checkins/<id>          undo a check-in (not the attendance mark)
 
 from __future__ import annotations
 
-import secrets
 from datetime import date, datetime, timedelta, timezone
 
 from flask import jsonify, request
 from sqlalchemy import func, select
 
 from hubra.core.auth.helpers import get_current_member
-from hubra.core.permissions import permission_required, require_member
-from hubra.core.utils import log_audit
+from hubra.core.contracts import SYSTEM, ActionUnavailable, Refused, query
 from hubra.core.errors import api_error
+from hubra.core.permissions import permission_required
 from hubra.core.extensions import db
 from hubra.core.models.event import ClubEvent, EventAttendance
 from hubra.core.models.member import Member
@@ -34,10 +36,9 @@ from hubra.core.models.member import Member
 from .models import CheckIn, MemberCard
 from .routes import keys_bp
 
-LABEL = "Check members in with their member card"
+LABEL = "Check members in with their member badge"
 # The same member at the same place within this time counts once.
 REPEAT = timedelta(minutes=10)
-MAX_LINK = 300
 
 
 def _now() -> datetime:
@@ -46,52 +47,6 @@ def _now() -> datetime:
 
 def _iso(value) -> str | None:
     return value.isoformat() if value else None
-
-
-def card_for(member_id: int) -> MemberCard:
-    card = db.session.get(MemberCard, member_id)
-    if card is None:
-        card = MemberCard(member_id=member_id, token=secrets.token_urlsafe(24))
-        db.session.add(card)
-        db.session.flush()
-    return card
-
-
-def qr_data_uri(text: str) -> str:
-    import base64
-    import io
-
-    import qrcode
-    import qrcode.image.svg
-
-    img = qrcode.make(text, image_factory=qrcode.image.svg.SvgPathImage, border=1)
-    buf = io.BytesIO()
-    img.save(buf)
-    return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode()
-
-
-def _link() -> str | None:
-    """Where the code points: the app's check-in screen, given by the app
-    (``?link=https://…/checkin?card=``). Only http(s) links."""
-    link = request.args.get("link") or ""
-    if not link.startswith(("https://", "http://")) or len(link) > MAX_LINK:
-        return None
-    return link
-
-
-def _card_out(member: Member, card: MemberCard) -> dict:
-    link = _link()
-    text = f"{link}{card.token}" if link else card.token
-    return {
-        "name": member.name,
-        "memberId": member.id,
-        "status": member.status,
-        "since": _iso(member.joined),
-        "until": _iso(member.membership_until),
-        "token": card.token,
-        "qr": qr_data_uri(text),
-        "renewedAt": _iso(card.created_at),
-    }
 
 
 def _blocked(member: Member) -> str | None:
@@ -122,10 +77,18 @@ def _member_out(member: Member) -> dict:
 
 
 def _by_token(token) -> Member | None:
-    if not isinstance(token, str) or not token or len(token) > 64:
+    """The member behind a scanned code: a member badge number, or a club
+    member card made before the badge (still accepted, see above)."""
+    if not isinstance(token, str) or not token.strip() or len(token) > 64:
         return None
     card = db.session.scalar(select(MemberCard).where(MemberCard.token == token))
-    return db.session.get(Member, card.member_id) if card else None
+    if card is not None:
+        return db.session.get(Member, card.member_id)
+    try:
+        found = query("members.badge.lookup", code=token, actor=SYSTEM)
+    except (ActionUnavailable, Refused):
+        return None
+    return db.session.get(Member, found["member_id"])
 
 
 def _checkin_out(c: CheckIn, names: dict[int, str], already=False) -> dict:
@@ -150,30 +113,6 @@ def _today_events():
     )
 
 
-# ── My card ──────────────────────────────────────────────────────────────────
-
-
-@keys_bp.get("/card")
-@require_member
-def my_card():
-    member = get_current_member()
-    card = card_for(member.id)
-    db.session.commit()
-    return jsonify(_card_out(member, card))
-
-
-@keys_bp.post("/card/renew")
-@require_member
-def renew_card():
-    member = get_current_member()
-    card = card_for(member.id)
-    card.token = secrets.token_urlsafe(24)
-    card.created_at = _now()
-    log_audit(member.id, "keys.card.renew", "MemberCard", member.id, member.name)
-    db.session.commit()
-    return jsonify(_card_out(member, card))
-
-
 # ── Check-in ─────────────────────────────────────────────────────────────────
 
 
@@ -182,7 +121,7 @@ def renew_card():
 def lookup():
     member = _by_token(request.args.get("card"))
     if member is None:
-        return api_error("CARD_UNKNOWN", "This is not a member card of the club.", 404)
+        return api_error("CARD_UNKNOWN", "No member of the club has this badge.", 404)
     return jsonify(_member_out(member))
 
 
@@ -240,7 +179,7 @@ def check_in():
     body = request.get_json(silent=True) or {}
     member = _by_token(body.get("card"))
     if member is None:
-        return api_error("CARD_UNKNOWN", "This is not a member card of the club.", 404)
+        return api_error("CARD_UNKNOWN", "No member of the club has this badge.", 404)
     reason = _blocked(member)
     if reason:
         return api_error("CARD_BLOCKED", reason, 409)

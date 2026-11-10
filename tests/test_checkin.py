@@ -1,4 +1,4 @@
-"""Member cards and check-in: the card's code, scanning it, attendance."""
+"""Check-in with the member badge: scanning it, attendance, old club cards."""
 
 from __future__ import annotations
 
@@ -8,9 +8,6 @@ import pytest
 
 from tests.helpers import set_modules
 from tests.settings.test_settings_kv import _login, _make_role_and_member
-
-LINK = "https://club.test/demo/app/inventory/checkin?card="
-
 
 @pytest.fixture
 def club(client, app, db, seeded_db):
@@ -27,12 +24,13 @@ def club(client, app, db, seeded_db):
 
 
 def _card(client, who: str) -> str:
-    _login(client, f"{who}@test.ch")
-    resp = client.get(f"/api/v1/keys/card?link={LINK}")
-    assert resp.status_code == 200, resp.get_json()
-    body = resp.get_json()
-    assert body["qr"].startswith("data:image/svg+xml;base64,")
-    return body["token"]
+    """The member's badge number, as the scanner reads it off My Account."""
+    from hubra.core.models.user import User
+    from hubra.core.services import member_badge
+    from hubra.core.extensions import db
+
+    user = db.session.query(User).filter_by(email=f"{who}@test.ch").one()
+    return member_badge.ensure_code(user)
 
 
 def _event(db, **extra):
@@ -46,16 +44,31 @@ def _event(db, **extra):
     return e
 
 
-def test_my_card_stays_until_renewed(client, club):
-    token = _card(client, "max")
-    assert _card(client, "max") == token
-    renewed = client.post(f"/api/v1/keys/card/renew?link={LINK}").get_json()
-    assert renewed["token"] != token
-    # The old code no longer works.
+def test_badge_number_typed_by_hand(client, club):
+    code = _card(client, "max")
     _login(client, "tom@test.ch")
-    old = client.post("/api/v1/keys/checkins", json={"card": token})
-    assert old.status_code == 404
-    assert old.get_json()["error"] == "CARD_UNKNOWN"
+    typed = code.lower().replace("-", " ")
+    who = client.get(f"/api/v1/keys/checkins/lookup?card={typed}").get_json()
+    assert who["memberId"] == club["max"]
+    unknown = client.post("/api/v1/keys/checkins", json={"card": "HB-0000-0000"})
+    assert unknown.status_code == 404
+    assert unknown.get_json()["error"] == "CARD_UNKNOWN"
+
+
+def test_old_club_cards_still_check_in(client, db, club):
+    from hubra_keys.models import MemberCard
+
+    db.session.add(MemberCard(member_id=club["ola"], token="old-printed-card"))
+    db.session.commit()
+    _login(client, "tom@test.ch")
+    resp = client.post("/api/v1/keys/checkins", json={"card": "old-printed-card"})
+    assert resp.status_code == 201 and resp.get_json()["memberId"] == club["ola"]
+
+
+def test_the_club_card_is_gone(client, club):
+    _login(client, "max@test.ch")
+    assert client.get("/api/v1/keys/card").status_code == 404
+    assert client.post("/api/v1/keys/card/renew").status_code == 404
 
 
 def test_check_in_at_an_event_marks_present(client, db, club):
@@ -175,10 +188,3 @@ def test_check_in_validates(client, db, club):
         resp = client.post("/api/v1/keys/checkins", json=body)
         assert resp.status_code == 400, body
     assert client.get("/api/v1/keys/checkins?date=gestern").status_code == 400
-
-
-def test_card_link_must_be_http(client, club):
-    _login(client, "max@test.ch")
-    body = client.get("/api/v1/keys/card?link=javascript:alert(1)//").get_json()
-    # Without a usable link the code holds just the token.
-    assert body["qr"] and body["token"]
