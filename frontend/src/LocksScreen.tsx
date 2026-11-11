@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, Badge, Button, Group, Modal, NumberInput, Paper, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
+import { Alert, Badge, Button, Group, NumberInput, Paper, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
 import { IconLock, IconPlus, IconRefresh } from '@tabler/icons-react'
-import { ConfirmModal, EmptyState, ErrorBanner, LoadingSpinner, PageHead, formatDateTime, useT, useToast } from '@hubra/plugin-sdk'
+import { ConfirmModal, EmptyState, ErrorBanner, LoadingSpinner, Modal, PageHead, formatDateTime, useT, useToast } from '@hubra/plugin-sdk'
 import { createLock, deleteLock, listLocks, syncLock, updateLock, type LockInput, type SmartLock } from './api'
 
 const KEY = ['keys', 'locks']
@@ -167,8 +167,31 @@ function LockForm({
   }
 
   return (
-    <Modal opened onClose={onClose} title={lock ? t('locks.edit') : t('locks.add')}>
-      <Stack gap="sm">
+    <>
+      <Modal
+        open
+        onClose={onClose}
+        title={lock ? t('locks.edit') : t('locks.add')}
+        onSubmit={(e) => {
+          e?.preventDefault()
+          if (!busy && form.name.trim() && form.smartlockId) void save()
+        }}
+        footer={
+          <>
+            {lock && (
+              <Button variant="subtle" color="red" mr="auto" onClick={() => setAsking(true)}>
+                {t('locks.delete')}
+              </Button>
+            )}
+            <Button variant="default" onClick={onClose}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" loading={busy} disabled={!form.name.trim() || !form.smartlockId}>
+              {t('locks.save')}
+            </Button>
+          </>
+        }
+      >
         <TextInput label={t('locks.name')} placeholder={t('locks.namePlaceholder')} value={form.name} maxLength={120} onChange={(e) => set('name', e.currentTarget.value)} required />
         <NumberInput
           label={t('locks.smartlockId')}
@@ -190,19 +213,7 @@ function LockForm({
         />
         <Switch label={t('locks.keypadLabel')} description={t('locks.keypadHint')} checked={form.keypad} onChange={(e) => set('keypad', e.currentTarget.checked)} />
         <Switch label={t('locks.appOpenLabel')} description={t('locks.appOpenHint')} checked={form.appOpen} onChange={(e) => set('appOpen', e.currentTarget.checked)} />
-        <Group justify="space-between" mt="sm">
-          {lock ? (
-            <Button variant="subtle" color="red" onClick={() => setAsking(true)}>
-              {t('locks.delete')}
-            </Button>
-          ) : (
-            <span />
-          )}
-          <Button onClick={save} loading={busy} disabled={!form.name.trim() || !form.smartlockId}>
-            {t('locks.save')}
-          </Button>
-        </Group>
-      </Stack>
+      </Modal>
       <ConfirmModal
         open={asking}
         onClose={() => setAsking(false)}
@@ -211,6 +222,6 @@ function LockForm({
         body={t('locks.deleteConfirm', { name: lock?.name ?? '' })}
         confirmLabel={t('locks.delete')}
       />
-    </Modal>
+    </>
   )
 }

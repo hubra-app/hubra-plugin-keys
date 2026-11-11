@@ -101,12 +101,16 @@ export function KeyFormModal({
       open
       onClose={onClose}
       title={clubKey === 'new' ? t('keys.add', 'Add key') : t('keys.edit', 'Edit key')}
+      onSubmit={(e) => {
+        e?.preventDefault()
+        if (!busy && form.label?.trim()) void save()
+      }}
       footer={
         <>
-          <Button variant="subtle" onClick={onClose}>
+          <Button variant="default" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button variant="default" onClick={save} loading={busy} disabled={!form.label?.trim()}>
+          <Button type="submit" loading={busy} disabled={!form.label?.trim()}>
             {t('common.save')}
           </Button>
         </>
@@ -205,7 +209,9 @@ export function KeyFormModal({
             onChange={(v) => setForm({ ...form, deposit_chf: v === '' ? null : Number(v) })}
             min={0}
             decimalScale={2}
+            thousandSeparator="’"
             prefix="CHF "
+            hideControls
           />
         </Field>
         <Field label={t('keys.notes', 'Notes')}>
@@ -263,12 +269,16 @@ export function IssueModal({
       open
       onClose={onClose}
       title={t('keys.issueTitle', 'Hand out {{name}}', { name: clubKey.label })}
+      onSubmit={(e) => {
+        e?.preventDefault()
+        if (!busy && memberId) void submit()
+      }}
       footer={
         <>
-          <Button variant="subtle" onClick={onClose}>
+          <Button variant="default" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button variant="default" onClick={submit} loading={busy} disabled={!memberId}>
+          <Button type="submit" loading={busy} disabled={!memberId}>
             {t('keys.issue', 'Hand out')}
           </Button>
         </>
