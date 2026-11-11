@@ -70,9 +70,10 @@ def key_options():
 
 
 @keys_bp.get("/<int:key_id>/code")
-@permission_required("keys", "read", "View keys")
+@permission_required("keys", "manage", "Manage keys")
 def reveal_code(key_id: int):
-    """A code key's code, for the managers; each look is in the audit log."""
+    """A key's code, for the key managers only (who may view keys sees that
+    there is a code, not the code); each look is in the audit log."""
     from hubra.core.utils import log_audit
 
     key = KeyService.get(key_id)

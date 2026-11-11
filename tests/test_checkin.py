@@ -55,14 +55,30 @@ def test_badge_number_typed_by_hand(client, club):
     assert unknown.get_json()["error"] == "CARD_UNKNOWN"
 
 
-def test_old_club_cards_still_check_in(client, db, club):
-    from hubra_keys.models import MemberCard
+def test_old_club_cards_no_longer_check_in(client, db, club):
+    from sqlalchemy import inspect
 
-    db.session.add(MemberCard(member_id=club["ola"], token="old-printed-card"))
-    db.session.commit()
+    assert "member_cards" not in inspect(db.engine).get_table_names()
     _login(client, "tom@test.ch")
     resp = client.post("/api/v1/keys/checkins", json={"card": "old-printed-card"})
-    assert resp.status_code == 201 and resp.get_json()["memberId"] == club["ola"]
+    assert resp.status_code == 404 and resp.get_json()["error"] == "CARD_UNKNOWN"
+
+
+def test_a_hubra_without_badge_lookup_says_so(client, db, club, monkeypatch):
+    from hubra.core.contracts import ActionUnavailable
+    from hubra_keys import checkin
+
+    def missing(*_a, **_k):
+        raise ActionUnavailable("members.badge.lookup")
+
+    monkeypatch.setattr(checkin, "query", missing)
+    _login(client, "tom@test.ch")
+    for resp in (
+        client.get("/api/v1/keys/checkins/lookup?card=HB-AAAA-BBBB"),
+        client.post("/api/v1/keys/checkins", json={"card": "HB-AAAA-BBBB"}),
+    ):
+        assert resp.status_code == 503
+        assert resp.get_json()["error"] == "BADGE_LOOKUP_MISSING"
 
 
 def test_the_club_card_is_gone(client, club):

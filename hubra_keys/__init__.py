@@ -83,7 +83,6 @@ module = Module(
         "keys",
         "key_assignments",
         "key_handovers",
-        "member_cards",
         "checkins",
         "smart_locks",
         "lock_access",

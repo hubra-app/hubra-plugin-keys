@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Security: only key managers (`keys.keys.manage`) can reveal a key's code. Who may only view keys sees that a key has a code, not the code.
+- Security: the old club member cards no longer check anyone in, and their table `member_cards` is dropped (migration `f4a9c2e7b1d3`). Their codes could no longer be renewed or revoked. Check-in scans the member badge.
+- Check-in on a Hubra without `members.badge.lookup` answers "update Hubra" (`BADGE_LOOKUP_MISSING`, 503) instead of calling every badge unknown. **At release: set `hubra:` in plugin.yaml to the first Hubra release after 0.2.5** (it has the lookup).
 - Security: codes under Meine Schlüssel follow membership like the door codes. A member who is suspended, inactive or whose membership has ended still sees the key, but not its code.
 - Security: undoing a check-in is written to the audit log, since check-ins are also the log of doors opened from the app.
 - Security: key fields are checked for length (label 120, number 100, opens 255, notes 10,000, code 200) and the deposit for range, instead of failing with a server error. `opens` must be text.

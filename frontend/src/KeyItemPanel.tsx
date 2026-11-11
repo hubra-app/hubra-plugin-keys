@@ -90,10 +90,13 @@ export function KeyItemPanel({ itemId }: { itemId: number }) {
             <PanelField label={t('keys.code', 'Code')}>
               {shown !== null ? (
                 <span className="num">{shown || '—'}</span>
-              ) : key.hasCode ? (
+              ) : key.hasCode && canManage ? (
                 <Button size="compact-xs" variant="subtle" onClick={show}>
                   {t('keys.showCode', 'Show')}
                 </Button>
+              ) : key.hasCode ? (
+                // Only key managers may look at the code.
+                <span className="num">••••</span>
               ) : (
                 '—'
               )}

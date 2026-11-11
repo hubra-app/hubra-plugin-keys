@@ -142,3 +142,28 @@ def test_lengths_are_checked(client, auth_headers):
         assert client.post("/api/v1/keys/", json=body).status_code == 400, body
     ok = client.post("/api/v1/keys/", json={"label": "x" * 120, "deposit_chf": "50"})
     assert ok.status_code == 201
+
+
+def test_only_key_managers_reveal_a_code(client, app, db, seeded_db):
+    """Who may view keys sees that a key has a code, not the code."""
+    from hubra.core.models.audit import AuditEntry
+    from tests.helpers import set_modules
+    from tests.settings.test_settings_kv import _login, _make_role_and_member
+
+    set_modules(True, "inventory", "inventory.keys")
+    app.test_cli_runner().invoke(args=["sync-permissions"])
+    tier = seeded_db["tier"]
+    _make_role_and_member(db, tier, name="Vera", permission_keys=["keys.keys.read"])
+    _make_role_and_member(
+        db, tier, name="Mona", permission_keys=["keys.keys.read", "keys.keys.manage"]
+    )
+    _login(client, "mona@test.ch")
+    key = client.post("/api/v1/keys/", json={"label": "Safe", "code": "2468"}).get_json()
+
+    _login(client, "vera@test.ch")
+    assert client.get(f"/api/v1/keys/{key['id']}").get_json()["hasCode"] is True
+    assert client.get(f"/api/v1/keys/{key['id']}/code").status_code == 403
+
+    _login(client, "mona@test.ch")
+    assert client.get(f"/api/v1/keys/{key['id']}/code").get_json() == {"code": "2468"}
+    assert db.session.query(AuditEntry).filter_by(action="reveal_code").count() == 1
