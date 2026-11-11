@@ -17,6 +17,12 @@ from .models import KEY_KINDS, KEY_STATUSES, Key, KeyAssignment
 
 _EDITABLE = ("label", "number", "kind", "opens", "deposit_chf", "notes", "public")
 SECRET_PURPOSE = "keys.secret"
+# Longest text each field takes (the column sizes; notes and the code are
+# capped so one request can't store megabytes).
+_MAX_LEN = {"label": 120, "number": 100, "opens": 255, "notes": 10000}
+_MAX_CODE = 200
+# deposit_chf is NUMERIC(10, 2).
+_MAX_DEPOSIT = Decimal("99999999.99")
 
 
 def key_to_dict(key: Key, with_history: bool = False) -> dict:
@@ -54,9 +60,11 @@ def key_to_dict(key: Key, with_history: bool = False) -> dict:
 
 def _clean(data: dict, partial: bool) -> dict:
     out = {k: data[k] for k in _EDITABLE if k in data}
-    for k in ("label", "number", "notes"):
+    for k, most in _MAX_LEN.items():
         if out.get(k) is not None and not isinstance(out[k], str):
             raise_error(400, "VALIDATION_ERROR", f"{k} must be text")
+        if out.get(k) is not None and len(out[k].strip()) > most:
+            raise_error(400, "VALIDATION_ERROR", f"{k} can be up to {most} characters")
     if "public" in out and not isinstance(out["public"], bool):
         raise_error(400, "VALIDATION_ERROR", "public must be true or false")
     if not partial and not (data.get("label") or "").strip():
@@ -74,7 +82,9 @@ def _clean(data: dict, partial: bool) -> dict:
             out["deposit_chf"] = Decimal(str(out["deposit_chf"]))
         except InvalidOperation:
             raise_error(400, "VALIDATION_ERROR", "deposit_chf must be a number")
-        if not out["deposit_chf"].is_finite():
+        if not out["deposit_chf"].is_finite() or not (
+            0 <= out["deposit_chf"] <= _MAX_DEPOSIT
+        ):
             raise_error(400, "VALIDATION_ERROR", "deposit_chf must be a number")
     elif "deposit_chf" in out:
         out["deposit_chf"] = None
@@ -111,6 +121,8 @@ def _apply_extras(key: Key, data: dict) -> None:
         if code is not None and not isinstance(code, str):
             raise_error(400, "VALIDATION_ERROR", "code must be text")
         code = (code or "").strip()
+        if len(code) > _MAX_CODE:
+            raise_error(400, "VALIDATION_ERROR", f"code can be up to {_MAX_CODE} characters")
         key.secret = encrypt_code(code, SECRET_PURPOSE) if code else None
     member_ids = _ids(data, "member_ids")
     group_ids = _ids(data, "group_ids")

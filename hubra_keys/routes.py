@@ -39,16 +39,21 @@ def my_keys():
     """Keys and codes the signed-in member holds, may use (public) or is
     assigned to (directly or through a group); no permission needed. A
     code, or a key with a code, comes with the code itself."""
+    from .locks import may_open
+
     me = get_current_member()
     # The member's view: no manager notes, no import marker, no other people.
     hidden = ("notes", "codeId", "holderId", "holderName", "members", "groups", "itemId")
+    # Codes follow membership like the door codes do: none for a member who
+    # is suspended, inactive or whose membership has ended.
+    show_codes = may_open(me)
     out = []
     for key in keys_for(me):
         row = {k: v for k, v in key_to_dict(key).items() if k not in hidden}
         row["mine"] = key.holder_id == me.id
         # A code key's code, or the code that goes with a key (a key safe,
         # the lock's combination).
-        if key.secret:
+        if key.secret and show_codes:
             row["code"] = plain_code(key)
         out.append(row)
     return jsonify(out), 200
@@ -65,9 +70,10 @@ def key_options():
 
 
 @keys_bp.get("/<int:key_id>/code")
-@permission_required("keys", "read", "View keys")
+@permission_required("keys", "manage", "Manage keys")
 def reveal_code(key_id: int):
-    """A code key's code, for the managers; each look is in the audit log."""
+    """A key's code, for the key managers only (who may view keys sees that
+    there is a code, not the code); each look is in the audit log."""
     from hubra.core.utils import log_audit
 
     key = KeyService.get(key_id)

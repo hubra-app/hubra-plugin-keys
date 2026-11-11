@@ -59,7 +59,7 @@ export const listKeys = () => apiFetch<ClubKey[]>('/keys/')
 export const listMyKeys = () => apiFetch<ClubKey[]>('/keys/mine')
 export const getKey = (id: number) => apiFetch<ClubKey>(`/keys/${id}`)
 /** The key behind an inventory item; 404 for an item that is no key. */
-/** A code key's code (managers; each look is in the audit log). */
+/** A key's code (keys.keys.manage only; each look is in the audit log). */
 export const revealCode = (id: number) => apiFetch<{ code: string | null }>(`/keys/${id}/code`)
 export const keyOptions = () =>
   apiFetch<{ groups: { id: number; name: string }[] }>('/keys/options')

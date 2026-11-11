@@ -7,9 +7,9 @@ trainer at training, someone at the door) scans it with a scanner or the
 check-in screen's camera; the check-in is kept, and at an event the member
 is marked present on the event's attendance roll.
 
-The club's own member cards (``member_cards``) are gone from the app. Codes
-members already have (printed, screenshots) still check in until a later
-release drops the table.
+The club's own member cards are gone: their table ``member_cards`` is
+dropped, so an old printed or photographed card code no longer checks
+anyone in (it could not be renewed or revoked any more).
 
 GET    /checkins/lookup        ?card=<badge number>: who it is, before checking in
 GET    /checkins/events        today's events to check people in to
@@ -33,7 +33,7 @@ from hubra.core.extensions import db
 from hubra.core.models.event import ClubEvent, EventAttendance
 from hubra.core.models.member import Member
 
-from .models import CheckIn, MemberCard
+from .models import CheckIn
 from .routes import keys_bp
 
 LABEL = "Check members in with their member badge"
@@ -76,19 +76,30 @@ def _member_out(member: Member) -> dict:
     }
 
 
+class BadgeLookupMissing(Exception):
+    """This Hubra has no ``members.badge.lookup`` (older than the release
+    after 0.2.5): say so instead of calling every badge unknown."""
+
+
 def _by_token(token) -> Member | None:
-    """The member behind a scanned code: a member badge number, or a club
-    member card made before the badge (still accepted, see above)."""
+    """The member behind a scanned member badge number."""
     if not isinstance(token, str) or not token.strip() or len(token) > 64:
         return None
-    card = db.session.scalar(select(MemberCard).where(MemberCard.token == token))
-    if card is not None:
-        return db.session.get(Member, card.member_id)
     try:
         found = query("members.badge.lookup", code=token, actor=SYSTEM)
-    except (ActionUnavailable, Refused):
+    except Refused:
         return None
+    except ActionUnavailable:
+        raise BadgeLookupMissing() from None
     return db.session.get(Member, found["member_id"])
+
+
+def _no_lookup():
+    return api_error(
+        "BADGE_LOOKUP_MISSING",
+        "This Hubra can't look up member badges yet. Update Hubra to check members in.",
+        503,
+    )
 
 
 def _checkin_out(c: CheckIn, names: dict[int, str], already=False) -> dict:
@@ -119,7 +130,10 @@ def _today_events():
 @keys_bp.get("/checkins/lookup")
 @permission_required("checkins", "create", LABEL)
 def lookup():
-    member = _by_token(request.args.get("card"))
+    try:
+        member = _by_token(request.args.get("card"))
+    except BadgeLookupMissing:
+        return _no_lookup()
     if member is None:
         return api_error("CARD_UNKNOWN", "No member of the club has this badge.", 404)
     return jsonify(_member_out(member))
@@ -177,7 +191,10 @@ def _names(ids) -> dict[int, str]:
 @permission_required("checkins", "create", LABEL)
 def check_in():
     body = request.get_json(silent=True) or {}
-    member = _by_token(body.get("card"))
+    try:
+        member = _by_token(body.get("card"))
+    except BadgeLookupMissing:
+        return _no_lookup()
     if member is None:
         return api_error("CARD_UNKNOWN", "No member of the club has this badge.", 404)
     reason = _blocked(member)
@@ -254,6 +271,18 @@ def undo(checkin_id: int):
     checkin = db.session.get(CheckIn, checkin_id)
     if checkin is None:
         return api_error("NOT_FOUND", "No such check-in.", 404)
+    # Check-ins are also the log of doors opened from the app: an undo is
+    # kept in the audit log so that log can't be emptied without a trace.
+    from hubra.core.utils import log_audit
+
+    log_audit(
+        get_current_member().id,
+        "keys.checkin.undo",
+        "CheckIn",
+        checkin.id,
+        f"member {checkin.member_id} at {_iso(checkin.at)}"
+        + (f" ({checkin.place})" if checkin.place else ""),
+    )
     db.session.delete(checkin)
     db.session.commit()
     return "", 204

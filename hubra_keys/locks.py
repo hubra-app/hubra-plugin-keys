@@ -48,6 +48,20 @@ def _token() -> str:
     return str(get_config(MODULE).get("nuki_token") or "").strip()
 
 
+def _plain(row: LockAccess) -> str | None:
+    """The member's keypad code, or None when there is none or it can't be
+    read any more (another club's or a lost key): one broken row must not
+    stop the sync or the member's page."""
+    from cryptography.fernet import InvalidToken
+
+    if not row.code:
+        return None
+    try:
+        return decrypt_code(row.code, PURPOSE)
+    except InvalidToken:
+        return None
+
+
 def may_open(member: Member) -> bool:
     if member.deleted_at or member.archived_at or member.is_blocked:
         return False
@@ -96,7 +110,8 @@ def sync(lock: SmartLock) -> dict:
             db.session.add(row)
         if row.status == "active":
             continue
-        code = decrypt_code(row.code, PURPOSE) if row.code else nuki.new_code()
+        # Not active on the lock, so a code that can't be read is replaced.
+        code = _plain(row) or nuki.new_code()
         row.code = encrypt_code(code, PURPOSE)
         try:
             row.auth_id = nuki.add_code(
@@ -294,9 +309,7 @@ def my_locks():
             continue
         row = next((a for a in lock.access if a.member_id == member.id), None)
         code = (
-            decrypt_code(row.code, PURPOSE)
-            if lock.keypad and row and row.status == "active" and row.code
-            else None
+            _plain(row) if lock.keypad and row and row.status == "active" else None
         )
         if code is None and not lock.app_open:
             continue

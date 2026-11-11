@@ -150,26 +150,6 @@ class KeyHandover(db.Model):
     )
 
 
-class MemberCard(db.Model):
-    """A member's card: the secret behind the QR code in their app.
-
-    One per member. Renewing it gives a new token, so a screenshot of the
-    old code stops working.
-    """
-
-    __tablename__ = "member_cards"
-
-    member_id: Mapped[int] = mapped_column(
-        db.Integer, ForeignKey("members.id", ondelete="CASCADE"), primary_key=True
-    )
-    token: Mapped[str] = mapped_column(db.String(64), nullable=False, unique=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
-
-
 class CheckIn(db.Model):
     """A scanned card: who came, when, and to which event (if any)."""
 

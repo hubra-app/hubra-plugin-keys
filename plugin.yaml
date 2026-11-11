@@ -1,6 +1,7 @@
 id: keys
 name: Keys
 version: "1.5.0"
+# At the next release: the first Hubra after 0.2.5 (members.badge.lookup).
 hubra: ">=0.2.5,<1"
 description: "Physical keys, cards and fobs: who holds which, with a handover log. Check members in at trainings, events and the door by scanning their member badge. Nuki smart locks whose keypad codes follow membership."
 author: Hubra
