@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Key, hand-out and lock dialogs use the shared footer (Abbrechen, main action, delete at the left) and save on Enter; the deposit has no arrows.
 - **A key can carry a code**: any key, card or fob can have a code next to it (a key safe, the lock's combination), stored encrypted like a code key. Managers see it with "Anzeigen" (audited), the holder and the members it is assigned to see it under Meine Schlüssel. "Code entfernen" removes it.
 - German texts are in Standard German now; they were still in Swiss German dialect. The Nuki hint points at Einstellungen › Module › Schlüssel (there is no "Verwalten" page).
 - **Check-in scans the member badge**: the one badge per person from My Account and Google Wallet (`HB-XXXX-XXXX`), through Hubra's `members.badge.lookup` contract; the number can also be typed. The club's own member card is gone from the account page (and `GET /keys/card`, `POST /keys/card/renew` with it), so members have one QR code instead of two. Cards members already have (printed, screenshots) still check in; a later release drops `member_cards`. Needs Hubra with `members.badge.lookup` (the release after 0.2.5).
