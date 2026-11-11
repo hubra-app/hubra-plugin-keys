@@ -107,6 +107,10 @@ def test_check_in_at_an_event_marks_present(client, db, club):
     assert client.delete(f"/api/v1/keys/checkins/{listed[0]['id']}").status_code == 204
     assert client.get("/api/v1/keys/checkins").get_json() == []
     assert db.session.query(EventAttendance).count() == 1
+    # The undo is in the audit log (check-ins are also the door log).
+    from hubra.core.models.audit import AuditEntry
+
+    assert db.session.query(AuditEntry).filter_by(action="keys.checkin.undo").count() == 1
 
 
 def test_excused_becomes_present(client, db, club):

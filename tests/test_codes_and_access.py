@@ -109,3 +109,36 @@ def test_codes_from_the_codes_plugin_come_in(client, auth_headers, db, monkeypat
     assert gate.kind == "code" and gate.notes == "Back gate" and gate.item_id
     assert client.get(f"/api/v1/keys/{gate.id}/code").get_json() == {"code": "4711"}
     assert db.session.query(Key).filter_by(code_id=8).one().status == "retired"
+
+
+def test_no_codes_once_the_membership_has_ended(client, auth_headers, app, db, people):
+    """Codes follow membership like the door codes: a member who is
+    suspended or whose membership ended still sees the key, not its code."""
+    from datetime import date, timedelta
+
+    (ada, ben, cleo), group = people
+    client.post("/api/v1/keys/", json={"label": "Safe", "kind": "code", "code": "9876",
+                                       "member_ids": [ada.id, ben.id]})
+    assert _mine(client, app, ada)[0]["code"] == "9876"
+    ada.membership_until = date.today() - timedelta(days=1)
+    ben.status = "inactive"
+    db.session.commit()
+    for member in (ada, ben):
+        [row] = _mine(client, app, member)
+        assert row["label"] == "Safe" and "code" not in row
+
+
+def test_lengths_are_checked(client, auth_headers):
+    for body in (
+        {"label": "x" * 121},
+        {"label": "x", "number": "1" * 101},
+        {"label": "x", "opens": "o" * 256},
+        {"label": "x", "opens": {"a": 1}},
+        {"label": "x", "notes": "n" * 10001},
+        {"label": "x", "code": "c" * 201},
+        {"label": "x", "deposit_chf": "1e12"},
+        {"label": "x", "deposit_chf": "-5"},
+    ):
+        assert client.post("/api/v1/keys/", json=body).status_code == 400, body
+    ok = client.post("/api/v1/keys/", json={"label": "x" * 120, "deposit_chf": "50"})
+    assert ok.status_code == 201

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Security: codes under Meine Schlüssel follow membership like the door codes. A member who is suspended, inactive or whose membership has ended still sees the key, but not its code.
+- Security: undoing a check-in is written to the audit log, since check-ins are also the log of doors opened from the app.
+- Security: key fields are checked for length (label 120, number 100, opens 255, notes 10,000, code 200) and the deposit for range, instead of failing with a server error. `opens` must be text.
+- A keypad code that can no longer be decrypted no longer stops the lock sync or the member's door page; while not active on the lock it is replaced by a new one.
 - Key, hand-out and lock dialogs use the shared footer (Abbrechen, main action, delete at the left) and save on Enter; the deposit has no arrows.
 - **A key can carry a code**: any key, card or fob can have a code next to it (a key safe, the lock's combination), stored encrypted like a code key. Managers see it with "Anzeigen" (audited), the holder and the members it is assigned to see it under Meine Schlüssel. "Code entfernen" removes it.
 - German texts are in Standard German now; they were still in Swiss German dialect. The Nuki hint points at Einstellungen › Module › Schlüssel (there is no "Verwalten" page).

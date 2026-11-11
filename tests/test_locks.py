@@ -106,6 +106,28 @@ def test_code_is_stored_encrypted(client, db, club, nuki):
     assert code not in row.code
 
 
+def test_a_code_that_cannot_be_read_does_not_break_the_sync(client, db, club, nuki):
+    """A keypad code sealed with another key (a failed key rotation, a copied
+    row) is replaced while pending and left out of the member's page, instead
+    of failing the whole sync and the page."""
+    from hubra_keys.locks import sync_all
+    from hubra_keys.models import LockAccess
+
+    _lock(client, groupId=club["group"])
+    row = db.session.query(LockAccess).one()
+    row.code, row.status = "not-a-sealed-code", "pending"
+    db.session.commit()
+    assert sync_all()["added"] == 1
+    db.session.commit()
+    assert row.code != "not-a-sealed-code" and row.status == "active"
+    row.code = "not-a-sealed-code"
+    db.session.commit()
+    _login(client, "max@test.ch")
+    mine = client.get("/api/v1/keys/locks/mine")
+    assert mine.status_code == 200
+    assert mine.get_json()[0]["code"] is None
+
+
 def test_codes_go_when_membership_ends(client, db, club, nuki):
     from hubra.core.models.member import Member
     from hubra_keys.locks import sync_all

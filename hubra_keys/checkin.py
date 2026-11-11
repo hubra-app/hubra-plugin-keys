@@ -254,6 +254,18 @@ def undo(checkin_id: int):
     checkin = db.session.get(CheckIn, checkin_id)
     if checkin is None:
         return api_error("NOT_FOUND", "No such check-in.", 404)
+    # Check-ins are also the log of doors opened from the app: an undo is
+    # kept in the audit log so that log can't be emptied without a trace.
+    from hubra.core.utils import log_audit
+
+    log_audit(
+        get_current_member().id,
+        "keys.checkin.undo",
+        "CheckIn",
+        checkin.id,
+        f"member {checkin.member_id} at {_iso(checkin.at)}"
+        + (f" ({checkin.place})" if checkin.place else ""),
+    )
     db.session.delete(checkin)
     db.session.commit()
     return "", 204
