@@ -4,7 +4,7 @@
 
 A plugin for [Hubra](https://hubra.club). Physical keys, cards and fobs: who holds which, with a handover log. Members see their keys on their account page.
 
-**Version** 1.4.0 · **Works with** Hubra >=0.2,<1 · **Plugin id** `keys`
+**Version** 1.6.0 · **Works with** Hubra >=0.2.6,<1 · **Plugin id** `keys`
 
 ## Keys in the inventory
 
